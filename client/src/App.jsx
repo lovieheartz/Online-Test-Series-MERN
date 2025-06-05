@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'react-toastify/dist/ReactToastify.css';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -16,6 +18,20 @@ import './index.css';
 function App() {
   return (
     <BrowserRouter>
+      {/* Add ToastContainer here - the only addition needed */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      
+      {/* Rest of your existing code remains exactly the same */}
       <Routes>
         {/* Public routes */}
         <Route path='/' element={<Signup />} />
@@ -77,7 +93,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
       </Routes>
     </BrowserRouter>
   );

@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -16,10 +17,9 @@ const AddFaculty = () => {
     email: "",
     password: "",
     phone: "",
-    specialization:"",
+    specialization: "",
   });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
 
@@ -29,13 +29,13 @@ const AddFaculty = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setIsSubmitting(true);
 
     const { name, email, phone, password, specialization } = formData;
 
     if (!name || !email || !phone || !password || !specialization) {
-      setError("All fields including are required.");
+      toast.error("All fields are required!");
+      setIsSubmitting(false);
       return;
     }
 
@@ -48,22 +48,19 @@ const AddFaculty = () => {
         specialization,
       });
 
-      if (res.data.message) {
-        setSuccess(res.data.message);
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          password: "",
-          specialization:"",
-        });
-      }
+      toast.success(res.data.message || "Faculty created successfully!");
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        password: "",
+        specialization: "",
+      });
     } catch (err) {
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Failed to create faculty.");
-      }
+      const errorMessage = err.response?.data?.message || "Failed to create faculty";
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -97,11 +94,8 @@ const AddFaculty = () => {
         <div className="form-container">
           <div className="form-wrapper">
             <h2 className="form-heading">Create Faculty</h2>
-            {error && <p className="error-message">{error}</p>}
-            {success && <p className="success-message">{success}</p>}
 
             <form onSubmit={handleSubmit} className="faculty-form">
-              {/* Faculty info */}
               <div className="form-group">
                 <input
                   type="text"
@@ -110,6 +104,7 @@ const AddFaculty = () => {
                   value={formData.name}
                   onChange={handleChange}
                   autoComplete="off"
+                  required
                 />
               </div>
               <div className="form-group">
@@ -120,6 +115,7 @@ const AddFaculty = () => {
                   value={formData.email}
                   onChange={handleChange}
                   autoComplete="off"
+                  required
                 />
               </div>
               <div className="form-group">
@@ -130,9 +126,9 @@ const AddFaculty = () => {
                   value={formData.password}
                   onChange={handleChange}
                   autoComplete="new-password"
+                  required
                 />
               </div>
-
               <div className="form-group">
                 <input
                   type="tel"
@@ -141,10 +137,9 @@ const AddFaculty = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   autoComplete="off"
+                  required
                 />
               </div>
-              
-              {/* Admin credentials */}
               <div className="form-group">
                 <input
                   type="text"
@@ -153,6 +148,7 @@ const AddFaculty = () => {
                   value={formData.specialization}
                   onChange={handleChange}
                   autoComplete="off"
+                  required
                 />
               </div>
 
@@ -160,11 +156,16 @@ const AddFaculty = () => {
                 <button 
                   onClick={() => navigate('/admin/faculty')}
                   className="text-blue-600 hover:text-blue-800 px-4 py-2"
+                  type="button"
                 >
                   ← Back to Faculty List
                 </button>
-                <button type="submit" className="submit-button">
-                  Create Faculty
+                <button 
+                  type="submit" 
+                  className="submit-button"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Create Faculty'}
                 </button>
               </div>
             </form>
