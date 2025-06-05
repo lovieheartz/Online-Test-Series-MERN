@@ -195,4 +195,5 @@ const FacultyList = () => {
   );
 };
 
+
 export default FacultyList;
