@@ -1,40 +1,13 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import axios from 'axios';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-  const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
   const { login } = useContext(AuthContext);
-
-  // useEffect(() => 
-  // {
-  //   localStorage.removeItem('authToken');
-
-  //   const modalEl = document.getElementById('loginModal');
-
-  //   if (location.state?.fromProtected && window.bootstrap?.Modal) 
-  //   {
-  //     const modal = new window.bootstrap.Modal(modalEl);
-  //     modal.show();
-  //     window.history.replaceState({}, document.title);
-  //   }
-  // }, [location]);
-
-  // useEffect(() => {
-  //   if (showModal) {
-  //     const timer = setTimeout(() => {
-  //       setShowModal(false);
-  //       navigate('/login', { replace: true });
-  //     }, 1000); // 3000ms = 3 seconds
-
-  //     return () => clearTimeout(timer); // cleanup if modal hides early
-  //   }
-  // }, [showModal, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -104,12 +77,17 @@ const Login = () => {
         </button>
       </form>
 
+      {/* Forgot Password Link */}
+      <p style={styles.forgotPasswordText}>
+        <Link to="/forgot-password" style={styles.link}>Forgot Password?</Link>
+      </p>
+
       <p style={styles.switchText}>
         Don’t have an account?{' '}
         <Link to="/register" style={styles.link}>Register here</Link>
       </p>
 
-      {/* Bootstrap Modal */}
+      {/* Bootstrap Modal (unchanged) */}
       <div className="modal fade" id="loginModal" tabIndex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
         <div className="modal-dialog model-dialog-centered">
           <div className="modal-content">
@@ -172,9 +150,14 @@ const styles = {
     cursor: 'pointer',
     transition: 'background-color 0.3s ease',
   },
+  forgotPasswordText: {
+    textAlign: 'center',
+    margin: '10px 0',
+    color: '#555',
+  },
   switchText: {
     textAlign: 'center',
-    marginTop: '20px',
+    marginTop: '10px',
     color: '#555',
   },
   link: {

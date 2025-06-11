@@ -14,6 +14,8 @@ import ProtectedRoute from './pages/ProtectedRoute';
 import FacultyList from './pages/FacultyList';
 import AddFaculty from './pages/AddFaculty';
 import './index.css';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -43,6 +45,8 @@ function App() {
         <Route path='/faculty/create-faculty' element={<CreateFaculty />} />
         <Route path="/faculty/add-faculty" element={<AddFaculty />} />
         <Route path="/admin/faculty" element={<FacultyList />} />  
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Protected routes */}
         <Route

@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const StudentSchema = new mongoose.Schema({
   name: {
@@ -24,7 +26,7 @@ const StudentSchema = new mongoose.Schema({
     required: true,
   },
   avatar: {
-    type: String, // URL or file path to the profile picture
+    type: String,
     default: "",
   },
   role: {
@@ -44,10 +46,38 @@ const StudentSchema = new mongoose.Schema({
       ref: "Report",
     },
   ],
+  resetToken: String,
+  resetTokenExpiry: Date,
 }, {
-  timestamps: true, // handles createdAt and updatedAt automatically
+  timestamps: true,
 });
 
-const Student = mongoose.model("Student", StudentSchema);
+// 🔐 Hash password before saving
+StudentSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
 
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 🔁 Compare password method
+StudentSchema.methods.comparePassword = function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+// 🔑 Generate JWT token method
+StudentSchema.methods.generateToken = function () {
+  return jwt.sign(
+    { id: this._id, role: this.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "1h" }
+  );
+};
+
+const Student = mongoose.model("Student", StudentSchema);
 module.exports = Student;

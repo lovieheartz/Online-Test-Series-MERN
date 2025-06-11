@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken'); // ⬅️ Add JWT
 
 const AdminSchema = new mongoose.Schema({
   name: {
@@ -28,7 +30,7 @@ const AdminSchema = new mongoose.Schema({
     default: "",
   },
   role: {
-    type: String, 
+    type: String,
     enum: ['admin', 'faculty', 'student'],
   },
   testSeriesCreated: [
@@ -43,10 +45,37 @@ const AdminSchema = new mongoose.Schema({
       ref: "Report",
     },
   ],
+  resetToken: String,
+  resetTokenExpiry: Date,
 }, {
   timestamps: true,
 });
 
-const Admin = mongoose.model('Admin', AdminSchema);
+// 🔐 Hash password before saving
+AdminSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
+// 🔁 Compare password method
+AdminSchema.methods.comparePassword = function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+// 🔑 Generate JWT token
+AdminSchema.methods.generateToken = function () {
+  return jwt.sign(
+    { id: this._id, role: this.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+};
+
+const Admin = mongoose.model('Admin', AdminSchema);
 module.exports = Admin;
