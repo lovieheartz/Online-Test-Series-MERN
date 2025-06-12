@@ -14,15 +14,14 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
 app.use("/", require("./routes/auth")); // Mount all auth-related routes under /auth
 app.use("/student", require("./routes/studentRoutes"));
 app.use("/admin", require("./routes/adminRoutes"));
 app.use("/faculty", require("./routes/facultyRoutes"));
-app.use('/', require('./routes/auth'));
 
 // Test route (optional)
 app.get("/", (req, res) => {
@@ -31,4 +30,4 @@ app.get("/", (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const Admin = require("../models/Admin");
 
+// ✅ Check if any admin exists
 exports.checkAdminExists = async (req, res) => {
   try {
     const adminExists = await Admin.exists({});
@@ -10,6 +11,7 @@ exports.checkAdminExists = async (req, res) => {
   }
 };
 
+// ✅ Create the very first admin
 exports.createFirstAdmin = async (req, res) => {
   const { name, email, password, phone } = req.body;
 
@@ -24,8 +26,8 @@ exports.createFirstAdmin = async (req, res) => {
       return res.status(400).json({ message: "Email already in use" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newAdmin = new Admin({ name, email, phone, password: hashedPassword, role: 'admin' });
+    // ❌ Remove manual hashing
+    const newAdmin = new Admin({ name, email, phone, password, role: 'admin' });
 
     await newAdmin.save();
     res.status(201).json({ message: "Admin user created successfully", user: newAdmin });
@@ -35,11 +37,13 @@ exports.createFirstAdmin = async (req, res) => {
   }
 };
 
+// ✅ Create admin by another admin (after verifying credentials)
 exports.createAdminByAdmin = async (req, res) => {
   const { name, email, phone, password, existingAdminEmail, existingAdminPassword } = req.body;
 
   try {
     const existingAdmin = await Admin.findOne({ email: existingAdminEmail });
+
     if (!existingAdmin || !(await bcrypt.compare(existingAdminPassword, existingAdmin.password))) {
       return res.status(401).json({ message: "Invalid existing admin credentials" });
     }
@@ -47,8 +51,8 @@ exports.createAdminByAdmin = async (req, res) => {
     const duplicate = await Admin.findOne({ email });
     if (duplicate) return res.status(400).json({ message: "Admin email already exists" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newAdmin = new Admin({ name, email, phone, password: hashedPassword, role: 'admin' });
+    // ❌ Remove manual hashing
+    const newAdmin = new Admin({ name, email, phone, password, role: 'admin' });
 
     await newAdmin.save();
     res.status(201).json({ message: "Admin user created successfully", user: newAdmin });

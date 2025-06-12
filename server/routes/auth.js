@@ -7,6 +7,16 @@ const Admin = require('../models/Admin');
 const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
 
+// Helper to get model by role
+const getModelByRole = (role) => {
+  switch (role) {
+    case 'admin': return Admin;
+    case 'faculty': return Faculty;
+    case 'student': return Student;
+    default: return null;
+  }
+};
+
 // Login Route
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -24,16 +34,20 @@ router.post('/login', async (req, res) => {
   try {
     for (const { model, role } of userTypes) {
       const user = await model.findOne({ email });
-      if (user && await user.comparePassword(password)) {
-        // Assume comparePassword is a method on your schema that compares hashed passwords
-        const token = user.generateToken(); // Custom method or use jwt.sign()
-        return res.json({ token, role, name: user.name });
+      if (user) {
+        const isMatch = await user.comparePassword(password);
+        if (isMatch) {
+          const token = user.generateToken();
+          return res.json({ token, role, name: user.name });
+        } else {
+          console.warn(`Password mismatch for ${role}: ${email}`);
+        }
       }
     }
 
     return res.status(401).json({ message: 'Invalid email or password.' });
   } catch (err) {
-    console.error('❌ Login error:', err.message);
+    console.error('Login error:', err.message);
     res.status(500).json({ message: 'Server error. Please try again.' });
   }
 });
@@ -46,23 +60,22 @@ router.post('/reset-password', async (req, res) => {
     return res.status(400).json({ message: 'Token, password, and user type are required.' });
   }
 
-  let UserModel;
-  if (type === 'admin') UserModel = Admin;
-  else if (type === 'faculty') UserModel = Faculty;
-  else if (type === 'student') UserModel = Student;
-  else return res.status(400).json({ message: 'Invalid user type.' });
+  const UserModel = getModelByRole(type);
+  if (!UserModel) {
+    return res.status(400).json({ message: 'Invalid user type.' });
+  }
 
   try {
     const user = await UserModel.findOne({
       resetToken: token,
-      resetTokenExpiry: { $gt: Date.now() }
+      resetTokenExpiry: { $gt: Date.now() },
     });
 
     if (!user) {
       return res.status(400).json({ message: 'Invalid or expired reset token.' });
     }
 
-    user.password = password; // Password should be hashed via Mongoose middleware
+    user.password = password; // Will be hashed via Mongoose middleware
     user.resetToken = undefined;
     user.resetTokenExpiry = undefined;
 
@@ -70,7 +83,7 @@ router.post('/reset-password', async (req, res) => {
 
     res.json({ message: 'Password has been reset successfully.' });
   } catch (error) {
-    console.error('❌ Error resetting password:', error.message);
+    console.error('Error resetting password:', error.message);
     res.status(500).json({ message: 'Server error. Please try again.' });
   }
 });
@@ -117,13 +130,12 @@ router.post('/forgot-password', async (req, res) => {
 
     transporter.verify((err, success) => {
       if (err) {
-        console.error('❌ SMTP transporter failed:', err.message);
+        console.error('SMTP transporter failed:', err.message);
       } else {
-        console.log('✅ SMTP transporter is ready');
+        console.log('SMTP transporter is ready');
       }
     });
 
-    // ✅ Use FRONTEND_URL from .env
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&type=${userType.toLowerCase()}`;
 
     await transporter.sendMail({
@@ -140,7 +152,7 @@ router.post('/forgot-password', async (req, res) => {
 
     res.json({ message: 'Password reset instructions sent to your email' });
   } catch (error) {
-    console.error('❌ Error processing request:', error.message);
+    console.error('Error processing request:', error.message);
     res.status(500).json({ message: 'Error processing your request' });
   }
 });

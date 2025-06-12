@@ -10,10 +10,10 @@ exports.registerStudent = async (req, res) => {
       return res.status(409).json({ error: "Student with this email already exists." });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newStudent = new Student({ name, email, phone, password: hashedPassword, role: 'student' });
+    // ❌ Don't hash manually
+    const newStudent = new Student({ name, email, phone, password, role: 'student' });
 
-    await newStudent.save();
+    await newStudent.save(); // ✅ Password will be hashed here
 
     res.status(201).json({
       message: "Student registered successfully",
@@ -24,3 +24,4 @@ exports.registerStudent = async (req, res) => {
     res.status(500).json({ error: "Server error. Registration failed." });
   }
 };
+

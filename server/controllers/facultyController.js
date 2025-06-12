@@ -5,7 +5,6 @@ const Faculty = require("../models/Faculty");
 exports.createFaculty = async (req, res) => {
   const { name, email, password, phone, specialization } = req.body;
 
-  // Validate required fields
   if (!name || !email || !password || !phone || !specialization) {
     return res.status(400).json({ 
       success: false,
@@ -14,7 +13,6 @@ exports.createFaculty = async (req, res) => {
   }
 
   try {
-    // Check for duplicate email
     const duplicate = await Faculty.findOne({ email });
     if (duplicate) {
       return res.status(409).json({ 
@@ -23,20 +21,17 @@ exports.createFaculty = async (req, res) => {
       });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new Faculty
+    // ❌ Remove manual password hashing
+    // ✅ Just pass the plain password; model will hash it automatically
     const newFaculty = new Faculty({
       name,
       email,
       phone,
       specialization,
-      password: hashedPassword,
+      password,
       role: "faculty",
     });
 
-    // Save to database
     await newFaculty.save();
 
     res.status(201).json({ 
@@ -58,6 +53,7 @@ exports.createFaculty = async (req, res) => {
     });
   }
 };
+
 
 // GET ALL FACULTIES
 exports.getAllFaculties = async (req, res) => {
