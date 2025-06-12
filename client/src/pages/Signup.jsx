@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Signup = () => {
-  const [isLogin, setIsLogin] = useState(false); // Toggle between login/register
+  const [isLogin, setIsLogin] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone:'',
+    phone: '',
     password: '',
     confirmPassword: '',
   });
   const navigate = useNavigate();
-
-  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,83 +21,74 @@ const Signup = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const { name, email, password, confirmPassword, phone } = formData;
 
-    const { name, email, password, confirmPassword , phone} = formData;
-
-    if (!email || !password || (!isLogin && (!name || !confirmPassword || !formData.phone))) {
-      setError('All fields are required.');
+    if (!email || !password || (!isLogin && (!name || !confirmPassword || !phone))) {
+      toast.error('All fields are required.');
       return;
     }
 
-    if (!isLogin && !/^\+\d{10,15}$/.test(formData.phone)) {
-      setError('Please enter a valid phone number with country code.');
+    if (!isLogin && !/^\+\d{10,15}$/.test(phone)) {
+      toast.error('Please enter a valid phone number with country code.');
       return;
     }
 
     if (!isLogin && password !== confirmPassword) {
-      setError('Passwords do not match.');
+      toast.error('Passwords do not match.');
       return;
     }
 
-    setError('');
-
     if (isLogin) {
-      // Login functionality
       axios
         .post('http://localhost:3001/login', { email, password })
         .then((result) => {
           const { token, role } = result.data;
-          console.log('Login successful:', result.data);
-          // Store the JWT token in localStorage
           localStorage.setItem('jwtToken', token);
           localStorage.setItem('userRole', role);
-          alert('Login successful!');
-          if (role === 'admin') {
-            navigate('/home');
-          } else if (role === 'faculty') {
-            navigate('/faculty-dashboard');
-          } else if (role === 'student') {
-            navigate('/student-dashboard');
-          } else {
-            navigate('/'); // default fallback
-          } // Redirect to a protected page
+          toast.success('Login successful!');
+
+          setTimeout(() => {
+            if (role === 'admin') navigate('/home');
+            else if (role === 'faculty') navigate('/faculty-dashboard');
+            else if (role === 'student') navigate('/student-dashboard');
+            else navigate('/');
+          }, 1500);
         })
         .catch((err) => {
-          console.log('Login error:', err);
-          setError('Login failed. Check your credentials.');
+          console.error('Login error:', err);
+          toast.error('Login failed. Check your credentials.');
         });
     } else {
-      // Register functionality
       axios
-        .post('http://localhost:3001/student', { name, email, password,phone})
+        .post('http://localhost:3001/student', { name, email, password, phone })
         .then((result) => {
           console.log('Registered:', result.data);
-          alert('Registration successful!');
-          navigate('/login');
+          toast.success('Registration successful!');
+          setTimeout(() => navigate('/login'), 1500);
         })
         .catch((err) => {
-          console.log('Registration error:', err);
-          setError('Registration failed. Try again.');
+          console.error('Registration error:', err);
+          toast.error('Registration failed. Try again.');
         });
     }
 
     setFormData({
       name: '',
       email: '',
+      phone: '',
       password: '',
-      phone:'',
       confirmPassword: '',
     });
   };
 
   return (
     <div style={styles.container}>
+      <ToastContainer />
       <div style={styles.toggleContainer}>
         <button
           onClick={() => {
             setIsLogin(false);
-            navigate('/register')
-
+            navigate('/');
           }}
           style={{
             ...styles.toggleButton,
@@ -110,8 +101,7 @@ const Signup = () => {
         <button
           onClick={() => {
             setIsLogin(true);
-            navigate('/login')
-
+            navigate('/login');
           }}
           style={{
             ...styles.toggleButton,
@@ -124,7 +114,6 @@ const Signup = () => {
       </div>
 
       <h2 style={styles.heading}>{isLogin ? 'Welcome Back!' : 'Create Your Account'}</h2>
-      {error && <p style={styles.error}>{error}</p>}
 
       <form onSubmit={handleSubmit} style={styles.form}>
         {!isLogin && (
@@ -146,17 +135,15 @@ const Signup = () => {
           onChange={handleChange}
         />
         {!isLogin && (
-          <>
-    <input
-      style={styles.input}
-      type="tel"
-      name="phone"
-      placeholder="Phone Number (e.g., +91XXXXXXXXXX)"
-      value={formData.phone}
-      onChange={handleChange}
-    />
-  </>
-)}
+          <input
+            style={styles.input}
+            type="tel"
+            name="phone"
+            placeholder="Phone Number (e.g., +91XXXXXXXXXX)"
+            value={formData.phone}
+            onChange={handleChange}
+          />
+        )}
         <input
           style={styles.input}
           type="password"
@@ -175,7 +162,6 @@ const Signup = () => {
             onChange={handleChange}
           />
         )}
-
         <button type="submit" style={styles.submitButton}>
           {isLogin ? 'Login' : 'Sign Up'}
         </button>
@@ -262,5 +248,3 @@ const styles = {
 };
 
 export default Signup;
-
-//phonenumber email password Name Confirmpass

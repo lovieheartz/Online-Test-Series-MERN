@@ -2,6 +2,8 @@ import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -30,17 +32,19 @@ const Login = () => {
         sessionStorage.setItem('authToken', token);
         login({ email, token, role, name });
 
-        alert('Login successful!');
+        toast.success('Login successful!');
 
-        if (role === 'student') {
-          navigate('/student-dashboard');
-        } else if (role === 'faculty') {
-          navigate('/faculty-dashboard');
-        } else if (role === 'admin') {
-          navigate('/home');
-        } else {
-          setError('Unknown role. Cannot redirect.');
-        }
+        setTimeout(() => {
+          if (role === 'student') {
+            navigate('/student-dashboard');
+          } else if (role === 'faculty') {
+            navigate('/faculty-dashboard');
+          } else if (role === 'admin') {
+            navigate('/home');
+          } else {
+            setError('Unknown role. Cannot redirect.');
+          }
+        }, 1500); // wait briefly so user sees the toast
       } else {
         setError(res.data.message || 'Invalid credentials.');
       }
@@ -77,15 +81,17 @@ const Login = () => {
         </button>
       </form>
 
-      {/* Forgot Password Link */}
       <p style={styles.forgotPasswordText}>
         <Link to="/forgot-password" style={styles.link}>Forgot Password?</Link>
       </p>
 
       <p style={styles.switchText}>
         Don’t have an account?{' '}
-        <Link to="/register" style={styles.link}>Register here</Link>
+        <Link to="/" style={styles.link}>Register here</Link>
       </p>
+
+      {/* Toast Container for notifications */}
+      <ToastContainer position="top-center" autoClose={2000} />
 
       {/* Bootstrap Modal (unchanged) */}
       <div className="modal fade" id="loginModal" tabIndex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">

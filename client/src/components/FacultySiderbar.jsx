@@ -60,9 +60,9 @@ const Sidebar = () => {
 
         <div className="w-full mt-8 md:mt-0">
           {/* Title */}
-          <h2 className="text-base font-semibold mb-24 text-left leading-snug">
-            Faculty <br /> Dashboard
-          </h2>
+          <h4 className="text-base font-medium mb-4 text-left leading-snug whitespace-nowrap">
+              Faculty Dashboard
+          </h4>
 
           {/* Menu Items */}
           <ul className="flex flex-col items-end space-y-5 text-lg font-semibold pr-4">
