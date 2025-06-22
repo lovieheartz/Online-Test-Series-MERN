@@ -1,57 +1,67 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 const CreateAdmin = () => {
   const [formData, setFormData] = useState({ name: "", email: "", password: "", phone: "" });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // ✅ Check if admin already exists
+  const { data, isLoading } = useQuery({
+    queryKey: ["adminExists"],
+    queryFn: async () => {
+      const res = await axios.get("http://localhost:3001/admin/exists");
+      return res.data;
+    },
+  });
+
+  // ✅ Mutation to create admin
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (newAdmin) => {
+      const res = await axios.post("http://localhost:3001/create-admin", newAdmin);
+      return res.data;
+    },
+    onSuccess: () => {
+      setSuccess("Admin created successfully!");
+      setError("");
+      setFormData({ name: "", email: "", password: "", phone: "" });
+    },
+    onError: (err) => {
+      console.error("Create admin error:", err);
+      const msg = err.response?.data?.message || "Failed to create admin.";
+      setError(msg);
+      setSuccess("");
+    },
+  });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    const { name, email, password,phone} = formData;
+    const { name, email, password, phone } = formData;
 
     if (!name || !email || !password || !phone) {
       setError("All fields are required.");
       return;
     }
 
-    try {
-      // ✅ Check if admin exists during submission
-      const check = await axios.get("http://localhost:3001/admin/exists");
-      if (check.data.exists) {
-        setError("Admin already exists. You cannot create another one.");
-        return;
-      }
-
-      // ✅ Continue to create the admin
-      const res = await axios.post("http://localhost:3001/create-admin", {
-        name,
-        email,
-        password,
-        phone, // add this to avoid missing field error if required
-      });
-
-      if (res.data) {
-        setSuccess("Admin created successfully!");
-        setFormData({ name: "", email: "", password: "" ,phone:""});
-      }
-    } catch (err) {
-      console.error(err);
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Failed to create admin.");
-      }
+    if (data?.exists) {
+      setError("Admin already exists. You cannot create another one.");
+      return;
     }
+
+    mutate(formData);
   };
+
+  if (isLoading) {
+    return <p style={{ textAlign: "center" }}>Checking admin status...</p>;
+  }
 
   return (
     <div style={styles.container}>
@@ -77,13 +87,13 @@ const CreateAdmin = () => {
           onChange={handleChange}
         />
         <input
-  style={styles.input}
-  type="tel"
-  name="phone"
-  placeholder="Phone Number"
-  value={formData.phone}
-  onChange={handleChange}
-/>
+          style={styles.input}
+          type="tel"
+          name="phone"
+          placeholder="Phone Number"
+          value={formData.phone}
+          onChange={handleChange}
+        />
         <input
           style={styles.input}
           type="password"
@@ -92,8 +102,8 @@ const CreateAdmin = () => {
           value={formData.password}
           onChange={handleChange}
         />
-        <button type="submit" style={styles.submitButton}>
-          Create Admin
+        <button type="submit" style={styles.submitButton} disabled={isPending}>
+          {isPending ? "Creating..." : "Create Admin"}
         </button>
       </form>
     </div>

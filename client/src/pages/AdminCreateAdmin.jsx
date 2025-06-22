@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
+import axios from "axios";
 
 const AdminCreateAdmin = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const AdminCreateAdmin = () => {
     existingAdminEmail: "",
     existingAdminPassword: "",
   });
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -19,58 +21,46 @@ const AdminCreateAdmin = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    const { name, email, password, phone, existingAdminEmail, existingAdminPassword } = formData;
-
-    // Validate all fields
-    if (!name || !email || !password || !existingAdminEmail || !existingAdminPassword || !phone) {
-      setError("All fields including existing admin credentials are required.");
-      return;
-    }
-
-    try {
-      // No need for token here because existing admin email/password will be checked explicitly
-      const res = await axios.post(
-        "http://localhost:3001/admin/create-admin",
-        {
-          name,
-          email,
-          password,
-          phone,
-          existingAdminEmail,
-          existingAdminPassword,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      setSuccess(res.data.message);
+  // ✅ useMutation for creating admin
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (data) => {
+      const res = await axios.post("http://localhost:3001/admin/create-admin", data, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      setSuccess(data.message || "Admin created successfully!");
+      setError("");
       setFormData({
         name: "",
         email: "",
         password: "",
-        phone:"",
+        phone: "",
         existingAdminEmail: "",
         existingAdminPassword: "",
       });
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-    } catch (err) {
+      setTimeout(() => navigate("/login"), 2000);
+    },
+    onError: (err) => {
       console.error("Create admin error:", err);
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Failed to create admin.");
-      }
+      const msg = err.response?.data?.message || "Failed to create admin.";
+      setError(msg);
+      setSuccess("");
+    },
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const { name, email, password, phone, existingAdminEmail, existingAdminPassword } = formData;
+
+    if (!name || !email || !password || !phone || !existingAdminEmail || !existingAdminPassword) {
+      setError("All fields including existing admin credentials are required.");
+      return;
     }
+
+    // ✅ Trigger mutation
+    mutate(formData);
   };
 
   return (
@@ -80,7 +70,7 @@ const AdminCreateAdmin = () => {
       {success && <p style={styles.success}>{success}</p>}
 
       <form onSubmit={handleSubmit} style={styles.form}>
-        {/* New Admin Details */}
+        {/* New Admin Fields */}
         <input
           style={styles.input}
           type="text"
@@ -91,14 +81,14 @@ const AdminCreateAdmin = () => {
           autoComplete="off"
         />
         <input
-  style={styles.input}
-  type="tel"
-  name="phone"
-  placeholder="New Admin Phone (+1234567890)"
-  value={formData.phone}
-  onChange={handleChange}
-  autoComplete="off"
-/>
+          style={styles.input}
+          type="tel"
+          name="phone"
+          placeholder="New Admin Phone (+1234567890)"
+          value={formData.phone}
+          onChange={handleChange}
+          autoComplete="off"
+        />
         <input
           style={styles.input}
           type="email"
@@ -138,8 +128,8 @@ const AdminCreateAdmin = () => {
           autoComplete="new-password"
         />
 
-        <button type="submit" style={styles.submitButton}>
-          Create Admin
+        <button type="submit" style={styles.submitButton} disabled={isPending}>
+          {isPending ? "Creating..." : "Create Admin"}
         </button>
       </form>
     </div>

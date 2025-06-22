@@ -1,29 +1,68 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const Signup = () => {
-  const [isLogin, setIsLogin] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-  });
   const navigate = useNavigate();
+  const [isLogin, setIsLogin] = React.useState(false); // keep this one only for toggling views
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // React Query Mutations
+  const loginMutation = useMutation({
+    mutationFn: async ({ email, password }) => {
+      const res = await fetch('http://localhost:3001/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Login failed');
+      return res.json();
+    },
+    onSuccess: ({ token, role }) => {
+      localStorage.setItem('jwtToken', token);
+      localStorage.setItem('userRole', role);
+      toast.success('Login successful!');
+      setTimeout(() => {
+        if (role === 'admin') navigate('/home');
+        else if (role === 'faculty') navigate('/faculty-dashboard');
+        else if (role === 'student') navigate('/student-dashboard');
+        else navigate('/');
+      }, 1500);
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
+  const registerMutation = useMutation({
+    mutationFn: async ({ name, email, phone, password }) => {
+      const res = await fetch('http://localhost:3001/student', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, password }),
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Registration failed');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Registration successful!');
+      setTimeout(() => navigate('/login'), 1500);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  // Form Submit Handler
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { name, email, password, confirmPassword, phone } = formData;
+    const form = e.target;
+    const formData = new FormData(form);
 
-    if (!email || !password || (!isLogin && (!name || !confirmPassword || !phone))) {
+    const name = formData.get('name');
+    const email = formData.get('email');
+    const phone = formData.get('phone');
+    const password = formData.get('password');
+    const confirmPassword = formData.get('confirmPassword');
+
+    if (!email || !password || (!isLogin && (!name || !phone || !confirmPassword))) {
       toast.error('All fields are required.');
       return;
     }
@@ -39,46 +78,12 @@ const Signup = () => {
     }
 
     if (isLogin) {
-      axios
-        .post('http://localhost:3001/login', { email, password })
-        .then((result) => {
-          const { token, role } = result.data;
-          localStorage.setItem('jwtToken', token);
-          localStorage.setItem('userRole', role);
-          toast.success('Login successful!');
-
-          setTimeout(() => {
-            if (role === 'admin') navigate('/home');
-            else if (role === 'faculty') navigate('/faculty-dashboard');
-            else if (role === 'student') navigate('/student-dashboard');
-            else navigate('/');
-          }, 1500);
-        })
-        .catch((err) => {
-          console.error('Login error:', err);
-          toast.error('Login failed. Check your credentials.');
-        });
+      loginMutation.mutate({ email, password });
     } else {
-      axios
-        .post('http://localhost:3001/student', { name, email, password, phone })
-        .then((result) => {
-          console.log('Registered:', result.data);
-          toast.success('Registration successful!');
-          setTimeout(() => navigate('/login'), 1500);
-        })
-        .catch((err) => {
-          console.error('Registration error:', err);
-          toast.error('Registration failed. Try again.');
-        });
+      registerMutation.mutate({ name, email, phone, password });
     }
 
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      password: '',
-      confirmPassword: '',
-    });
+    form.reset();
   };
 
   return (
@@ -122,8 +127,7 @@ const Signup = () => {
             type="text"
             name="name"
             placeholder="Full Name"
-            value={formData.name}
-            onChange={handleChange}
+            required
           />
         )}
         <input
@@ -131,8 +135,7 @@ const Signup = () => {
           type="email"
           name="email"
           placeholder="Email Address"
-          value={formData.email}
-          onChange={handleChange}
+          required
         />
         {!isLogin && (
           <input
@@ -140,8 +143,7 @@ const Signup = () => {
             type="tel"
             name="phone"
             placeholder="Phone Number (e.g., +91XXXXXXXXXX)"
-            value={formData.phone}
-            onChange={handleChange}
+            required
           />
         )}
         <input
@@ -149,8 +151,7 @@ const Signup = () => {
           type="password"
           name="password"
           placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
+          required
         />
         {!isLogin && (
           <input
@@ -158,8 +159,7 @@ const Signup = () => {
             type="password"
             name="confirmPassword"
             placeholder="Confirm Password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
+            required
           />
         )}
         <button type="submit" style={styles.submitButton}>
@@ -191,11 +191,6 @@ const styles = {
     textAlign: 'center',
     color: '#333',
     marginBottom: '20px',
-  },
-  error: {
-    color: 'red',
-    textAlign: 'center',
-    marginBottom: '10px',
   },
   form: {
     display: 'flex',

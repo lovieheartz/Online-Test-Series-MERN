@@ -1,4 +1,5 @@
 import React, { useContext, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../context/AuthContext';
@@ -13,13 +14,12 @@ const AddFaculty = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    phone: "",
-    specialization: "",
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+    specialization: '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
 
@@ -27,46 +27,48 @@ const AddFaculty = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  // ✅ useMutation for form submission
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (newFaculty) => {
+      const res = await axios.post(
+        'http://localhost:3001/faculty/create-faculty',
+        newFaculty
+      );
+      return res.data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || 'Faculty created successfully!');
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        phone: '',
+        specialization: '',
+      });
+    },
+    onError: (err) => {
+      const errorMessage = err.response?.data?.message || 'Failed to create faculty';
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
     const { name, email, phone, password, specialization } = formData;
 
     if (!name || !email || !phone || !password || !specialization) {
-      toast.error("All fields are required!");
-      setIsSubmitting(false);
+      toast.error('All fields are required!');
       return;
     }
 
-    try {
-      const res = await axios.post("http://localhost:3001/faculty/create-faculty", {
-        name,
-        email,
-        phone,
-        password,
-        specialization,
-      });
-
-      toast.success(res.data.message || "Faculty created successfully!");
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        password: "",
-        specialization: "",
-      });
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || "Failed to create faculty";
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    // ✅ trigger mutation
+    mutate({ name, email, phone, password, specialization });
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/login', {replace: true});
+    navigate('/login', { replace: true });
   };
 
   if (!user) {
@@ -81,7 +83,6 @@ const AddFaculty = () => {
   return (
     <div className="dashboard">
       <Sidebar />
-
       <div className="main">
         <Header
           user={user}
@@ -153,19 +154,15 @@ const AddFaculty = () => {
               </div>
 
               <div className="flex justify-between">
-                <button 
+                <button
                   onClick={() => navigate('/admin/faculty')}
                   className="text-blue-600 hover:text-blue-800 px-4 py-2"
                   type="button"
                 >
                   ← Back to Faculty List
                 </button>
-                <button 
-                  type="submit" 
-                  className="submit-button"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Creating...' : 'Create Faculty'}
+                <button type="submit" className="submit-button" disabled={isPending}>
+                  {isPending ? 'Creating...' : 'Create Faculty'}
                 </button>
               </div>
             </form>

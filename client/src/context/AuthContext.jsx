@@ -2,6 +2,7 @@ import { createContext, useEffect, useState } from "react";
 
 // 1. Create context
 export const AuthContext = createContext();
+export const useAuth = () => useContext(AuthContext);
 
 // 2. Create a provider component
 export const AuthProvider = ({ children }) => {

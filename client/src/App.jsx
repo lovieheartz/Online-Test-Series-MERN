@@ -17,13 +17,15 @@ import './index.css';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
+// ✅ Optional: Add React Query DevTools
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
 function App() {
   return (
     <BrowserRouter>
-      {/* Add ToastContainer here - the only addition needed */}
       <ToastContainer
         position="top-right"
-        autoClose={5000}
+        autoClose={2000}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick
@@ -32,72 +34,31 @@ function App() {
         draggable
         pauseOnHover
       />
-      
-      {/* Rest of your existing code remains exactly the same */}
+
       <Routes>
         {/* Public routes */}
         <Route path='/' element={<Signup />} />
         <Route path='/student' element={<Signup />} />
         <Route path='/login' element={<Login />} />
-        {/* Make create-admin public, no ProtectedRoute */}
         <Route path='/create-admin' element={<CreateAdmin />} />
         <Route path='/admin/create-admin' element={<AdminCreateAdmin />} />
         <Route path='/faculty/create-faculty' element={<CreateFaculty />} />
-        <Route path="/faculty/add-faculty" element={<AddFaculty />} />
-        <Route path="/admin/faculty" element={<FacultyList />} />  
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path='/faculty/add-faculty' element={<AddFaculty />} />
+        <Route path='/admin/faculty' element={<FacultyList />} />  
+        <Route path='/forgot-password' element={<ForgotPassword />} />
+        <Route path='/reset-password' element={<ResetPassword />} />
 
         {/* Protected routes */}
-        <Route
-          path='/home'
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/profile'
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/student-dashboard'
-          element={
-            <ProtectedRoute>
-              <StudentDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/faculty-dashboard'
-          element={
-            <ProtectedRoute>
-              <FacultyDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/admin/faculty'
-          element={
-            <ProtectedRoute>
-              <FacultyList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/faculty/add-faculty'
-          element={
-            <ProtectedRoute>
-              <AddFaculty />
-            </ProtectedRoute>
-          }
-        />
+        <Route path='/home' element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path='/profile' element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path='/student-dashboard' element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+        <Route path='/faculty-dashboard' element={<ProtectedRoute><FacultyDashboard /></ProtectedRoute>} />
+        <Route path='/admin/faculty' element={<ProtectedRoute><FacultyList /></ProtectedRoute>} />
+        <Route path='/faculty/add-faculty' element={<ProtectedRoute><AddFaculty /></ProtectedRoute>} />
       </Routes>
+
+      {/* ✅ Add React Query DevTools at the bottom */}
+      <ReactQueryDevtools initialIsOpen={false} />
     </BrowserRouter>
   );
 }

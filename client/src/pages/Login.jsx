@@ -1,9 +1,15 @@
 import React, { useState, useContext } from 'react';
-import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+const loginUser = async ({ email, password }) => {
+  const response = await axios.post('http://localhost:3001/login', { email, password });
+  return response.data;
+};
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -11,11 +17,34 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
+  const { mutate, isLoading } = useMutation({
+    mutationFn: loginUser,
+    onSuccess: (data) => {
+      const { token, role, name } = data;
+      sessionStorage.setItem('authToken', token);
+      login({ email: formData.email, token, role, name });
+
+      toast.success('Login successful!');
+      setError('');
+
+      setTimeout(() => {
+        if (role === 'student') navigate('/student-dashboard');
+        else if (role === 'faculty') navigate('/faculty-dashboard');
+        else if (role === 'admin') navigate('/home');
+        else setError('Unknown role. Cannot redirect.');
+      }, 1500);
+    },
+    onError: (err) => {
+      console.error(err);
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    },
+  });
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     const { email, password } = formData;
 
@@ -24,34 +53,7 @@ const Login = () => {
       return;
     }
 
-    try {
-      const res = await axios.post('http://localhost:3001/login', { email, password });
-
-      if (res.data && res.data.token) {
-        const { token, role, name } = res.data;
-        sessionStorage.setItem('authToken', token);
-        login({ email, token, role, name });
-
-        toast.success('Login successful!');
-
-        setTimeout(() => {
-          if (role === 'student') {
-            navigate('/student-dashboard');
-          } else if (role === 'faculty') {
-            navigate('/faculty-dashboard');
-          } else if (role === 'admin') {
-            navigate('/home');
-          } else {
-            setError('Unknown role. Cannot redirect.');
-          }
-        }, 1500); // wait briefly so user sees the toast
-      } else {
-        setError(res.data.message || 'Invalid credentials.');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Login failed. Please try again.');
-    }
+    mutate({ email, password });
   };
 
   return (
@@ -76,8 +78,8 @@ const Login = () => {
           value={formData.password}
           onChange={handleChange}
         />
-        <button type="submit" style={styles.submitButton}>
-          Login
+        <button type="submit" style={styles.submitButton} disabled={isLoading}>
+          {isLoading ? 'Logging in...' : 'Login'}
         </button>
       </form>
 
@@ -90,10 +92,9 @@ const Login = () => {
         <Link to="/" style={styles.link}>Register here</Link>
       </p>
 
-      {/* Toast Container for notifications */}
-      <ToastContainer position="top-center" autoClose={2000} />
+      <ToastContainer autoClose={2000} />
 
-      {/* Bootstrap Modal (unchanged) */}
+      {/* Bootstrap Modal (optional usage retained) */}
       <div className="modal fade" id="loginModal" tabIndex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
         <div className="modal-dialog model-dialog-centered">
           <div className="modal-content">

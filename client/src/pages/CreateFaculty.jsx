@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 const CreateFaculty = () => {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -18,7 +20,35 @@ const CreateFaculty = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const createFacultyMutation = useMutation({
+    mutationFn: async (newFaculty) => {
+      const res = await axios.post("http://localhost:3001/faculty/create-faculty", newFaculty);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      setSuccess(data.message || "Faculty created successfully!");
+      setError("");
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        password: "",
+        specialization: "",
+      });
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    },
+    onError: (err) => {
+      console.error("Faculty creation failed:", err);
+      const message = err.response?.data?.message || "Failed to create faculty.";
+      setError(message);
+      setSuccess("");
+    },
+  });
+
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -30,35 +60,7 @@ const CreateFaculty = () => {
       return;
     }
 
-    try {
-      const res = await axios.post("http://localhost:3001/faculty/create-faculty", {
-        name,
-        email,
-        phone,
-        password,
-        specialization,
-      });
-
-      if (res.data.message) {
-        setSuccess(res.data.message);
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          password: "",
-          specialization: "",
-        });
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
-      }
-    } catch (err) {
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Failed to create faculty.");
-      }
-    }
+    createFacultyMutation.mutate(formData);
   };
 
   return (
@@ -113,8 +115,12 @@ const CreateFaculty = () => {
           onChange={handleChange}
           autoComplete="new-password"
         />
-        <button type="submit" style={styles.submitButton}>
-          Create Faculty
+        <button
+          type="submit"
+          style={styles.submitButton}
+          disabled={createFacultyMutation.isPending}
+        >
+          {createFacultyMutation.isPending ? "Creating..." : "Create Faculty"}
         </button>
       </form>
     </div>

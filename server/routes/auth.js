@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
 const Admin = require('../models/Admin');
 const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
+
+const { sendPasswordResetEmail } = require('../services/mailService');
 
 // Helper to get model by role
 const getModelByRole = (role) => {
@@ -120,35 +121,7 @@ router.post('/forgot-password', async (req, res) => {
     user.resetTokenExpiry = resetTokenExpiry;
     await user.save();
 
-    const transporter = nodemailer.createTransport({
-      service: 'Gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
-
-    transporter.verify((err, success) => {
-      if (err) {
-        console.error('SMTP transporter failed:', err.message);
-      } else {
-        console.log('SMTP transporter is ready');
-      }
-    });
-
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&type=${userType.toLowerCase()}`;
-
-    await transporter.sendMail({
-      to: email,
-      subject: 'Password Reset Request',
-      html: `
-        <p>You requested a password reset for your ${userType} account.</p>
-        <p>Click the link below to reset your password:</p>
-        <a href="${resetUrl}">${resetUrl}</a>
-        <p>This link will expire in 1 hour.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-      `,
-    });
+    await sendPasswordResetEmail(email, resetToken, userType);
 
     res.json({ message: 'Password reset instructions sent to your email' });
   } catch (error) {

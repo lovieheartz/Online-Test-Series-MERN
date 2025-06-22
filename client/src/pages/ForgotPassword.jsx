@@ -1,35 +1,37 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [localError, setLocalError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const mutation = useMutation({
+    mutationFn: async (email) => {
+      const response = await axios.post('http://localhost:3001/forgot-password', { email });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setLocalError('');
+      setTimeout(() => navigate('/login'), 3000);
+    },
+    onError: (error) => {
+      setLocalError(error.response?.data?.message || 'Failed to send reset instructions. Please try again.');
+    },
+  });
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
-    setMessage('');
+    setLocalError('');
 
     if (!email) {
-      setError('Please enter your email address');
-      setIsLoading(false);
+      setLocalError('Please enter your email address');
       return;
     }
 
-    try {
-      const response = await axios.post('http://localhost:3001/forgot-password', { email });
-      setMessage(response.data.message);
-      setTimeout(() => navigate('/login'), 3000); // Redirect to login after 3 seconds
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send reset instructions. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    mutation.mutate(email);
   };
 
   return (
@@ -37,8 +39,10 @@ const ForgotPassword = () => {
       <h2 style={styles.heading}>Forgot Password</h2>
       <p style={styles.subHeading}>Enter your email to receive reset instructions</p>
 
-      {error && <div style={styles.error}>{error}</div>}
-      {message && <div style={styles.success}>{message}</div>}
+      {localError && <div style={styles.error}>{localError}</div>}
+      {mutation.isSuccess && (
+        <div style={styles.success}>{mutation.data.message}</div>
+      )}
 
       <form onSubmit={handleSubmit} style={styles.form}>
         <div style={styles.inputGroup}>
@@ -57,9 +61,9 @@ const ForgotPassword = () => {
         <button
           type="submit"
           style={styles.submitButton}
-          disabled={isLoading}
+          disabled={mutation.isLoading}
         >
-          {isLoading ? 'Sending...' : 'Send Reset Link'}
+          {mutation.isLoading ? 'Sending...' : 'Send Reset Link'}
         </button>
       </form>
 
