@@ -271,3 +271,9 @@
   text-align: center;
   margin-bottom: 15px;
 }
+
+.error-text {
+  color: red;
+  font-size: 0.875rem;
+  margin-top: 4px;
+}

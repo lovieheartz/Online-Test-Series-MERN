@@ -1,14 +1,22 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = React.useState(false); // keep this one only for toggling views
+  const [isLogin, setIsLogin] = React.useState(false);
 
-  // React Query Mutations
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm();
+
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }) => {
       const res = await fetch('http://localhost:3001/login', {
@@ -50,41 +58,21 @@ const Signup = () => {
     onError: (err) => toast.error(err.message),
   });
 
-  // Form Submit Handler
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-
-    const name = formData.get('name');
-    const email = formData.get('email');
-    const phone = formData.get('phone');
-    const password = formData.get('password');
-    const confirmPassword = formData.get('confirmPassword');
-
-    if (!email || !password || (!isLogin && (!name || !phone || !confirmPassword))) {
-      toast.error('All fields are required.');
-      return;
-    }
-
-    if (!isLogin && !/^\+\d{10,15}$/.test(phone)) {
-      toast.error('Please enter a valid phone number with country code.');
-      return;
-    }
-
-    if (!isLogin && password !== confirmPassword) {
-      toast.error('Passwords do not match.');
-      return;
-    }
-
+  const onSubmit = (data) => {
     if (isLogin) {
-      loginMutation.mutate({ email, password });
+      loginMutation.mutate({ email: data.email, password: data.password });
     } else {
-      registerMutation.mutate({ name, email, phone, password });
+      registerMutation.mutate({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+      });
     }
-
-    form.reset();
+    reset();
   };
+
+  const password = watch('password');
 
   return (
     <div style={styles.container}>
@@ -120,48 +108,69 @@ const Signup = () => {
 
       <h2 style={styles.heading}>{isLogin ? 'Welcome Back!' : 'Create Your Account'}</h2>
 
-      <form onSubmit={handleSubmit} style={styles.form}>
+      <form onSubmit={handleSubmit(onSubmit)} style={styles.form}>
         {!isLogin && (
-          <input
-            style={styles.input}
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            required
-          />
+          <>
+            <input
+              style={styles.input}
+              type="text"
+              placeholder="Full Name"
+              {...register('name', { required: 'Name is required' })}
+            />
+            {errors.name && <p style={styles.error}>{errors.name.message}</p>}
+
+            <input
+              style={styles.input}
+              type="tel"
+              placeholder="Phone Number (e.g., +91XXXXXXXXXX)"
+              {...register('phone', {
+                required: 'Phone number is required',
+                pattern: {
+                  value: /^\+\d{10,15}$/,
+                  message: 'Phone number must include country code',
+                },
+              })}
+            />
+            {errors.phone && <p style={styles.error}>{errors.phone.message}</p>}
+          </>
         )}
+
         <input
           style={styles.input}
           type="email"
-          name="email"
           placeholder="Email Address"
-          required
+          {...register('email', { required: 'Email is required' })}
         />
-        {!isLogin && (
-          <input
-            style={styles.input}
-            type="tel"
-            name="phone"
-            placeholder="Phone Number (e.g., +91XXXXXXXXXX)"
-            required
-          />
-        )}
+        {errors.email && <p style={styles.error}>{errors.email.message}</p>}
+
         <input
           style={styles.input}
           type="password"
-          name="password"
           placeholder="Password"
-          required
+          autoComplete="new-password"
+          {...register('password', { required: 'Password is required' })}
         />
+        {errors.password && <p style={styles.error}>{errors.password.message}</p>}
+
         {!isLogin && (
-          <input
-            style={styles.input}
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            required
-          />
+          <>
+            <input
+              style={styles.input}
+              type="password"
+              placeholder="Confirm Password"
+              autoComplete="new-password"
+              {...register('confirmPassword', {
+                required: 'Confirm Password is required',
+                validate: (value) =>
+                  value === password || 'Passwords do not match',
+              })}
+            />
+            {errors.confirmPassword && (
+              <p style={styles.error}>{errors.confirmPassword.message}</p>
+            )}
+          </>
         )}
+
         <button type="submit" style={styles.submitButton}>
           {isLogin ? 'Login' : 'Sign Up'}
         </button>
@@ -239,6 +248,12 @@ const styles = {
     cursor: 'pointer',
     textDecoration: 'underline',
     fontWeight: 'bold',
+  },
+  error: {
+    color: 'red',
+    fontSize: '13px',
+    marginTop: '-10px',
+    marginBottom: '10px',
   },
 };
 

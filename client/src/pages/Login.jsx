@@ -1,85 +1,74 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
+import { useForm } from 'react-hook-form';
 import { AuthContext } from '../context/AuthContext';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const loginUser = async ({ email, password }) => {
-  const response = await axios.post('http://localhost:3001/login', { email, password });
-  return response.data;
-};
-
 const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm();
 
-  const { mutate, isLoading } = useMutation({
-    mutationFn: loginUser,
+  const { mutate } = useMutation({
+    mutationFn: async (formData) => {
+      const response = await axios.post('http://localhost:3001/login', formData);
+      return response.data;
+    },
     onSuccess: (data) => {
       const { token, role, name } = data;
       sessionStorage.setItem('authToken', token);
-      login({ email: formData.email, token, role, name });
+      login({ email: data.email, token, role, name });
 
       toast.success('Login successful!');
-      setError('');
 
       setTimeout(() => {
         if (role === 'student') navigate('/student-dashboard');
         else if (role === 'faculty') navigate('/faculty-dashboard');
         else if (role === 'admin') navigate('/home');
-        else setError('Unknown role. Cannot redirect.');
       }, 1500);
     },
     onError: (err) => {
-      console.error(err);
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      toast.error(err.response?.data?.message || 'Login failed. Please try again.');
     },
   });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const { email, password } = formData;
-
-    if (!email || !password) {
-      setError('Email and password are required.');
-      return;
-    }
-
-    mutate({ email, password });
+  const onSubmit = (data) => {
+    mutate(data);
   };
 
   return (
     <div style={styles.container}>
       <h2 style={styles.heading}>Welcome Back!</h2>
-      {error && <p style={styles.error}>{error}</p>}
+      {errors.email || errors.password ? (
+        <p style={styles.error}>Email and password are required.</p>
+      ) : null}
 
-      <form onSubmit={handleSubmit} style={styles.form}>
+      <form onSubmit={handleSubmit(onSubmit)} style={styles.form}>
         <input
           style={styles.input}
           type="email"
-          name="email"
           placeholder="Email Address"
-          value={formData.email}
-          onChange={handleChange}
+          {...register('email', { required: true })}
         />
         <input
           style={styles.input}
           type="password"
-          name="password"
           placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
+          {...register('password', { required: true })}
         />
-        <button type="submit" style={styles.submitButton} disabled={isLoading}>
-          {isLoading ? 'Logging in...' : 'Login'}
+        <button 
+          type="submit" 
+          style={styles.submitButton} 
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Logging in...' : 'Login'}
         </button>
       </form>
 
@@ -88,29 +77,11 @@ const Login = () => {
       </p>
 
       <p style={styles.switchText}>
-        Don’t have an account?{' '}
+        Don't have an account?{' '}
         <Link to="/" style={styles.link}>Register here</Link>
       </p>
 
       <ToastContainer autoClose={2000} />
-
-      {/* Bootstrap Modal (optional usage retained) */}
-      <div className="modal fade" id="loginModal" tabIndex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
-        <div className="modal-dialog model-dialog-centered">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title" id="loginModalLabel">Authentication Required</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div className="modal-body">
-              Login is required to access that page.
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-primary" data-bs-dismiss="modal">OK</button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

@@ -7,44 +7,35 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useForm } from 'react-hook-form';
 import './Dashboard.css';
 
 const AddFaculty = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    phone: '',
-    specialization: '',
-  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
 
   const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  // ✅ useMutation for form submission
-  const { mutate, isPending } = useMutation({
+  const { mutate, isPending: isCreating } = useMutation({
     mutationFn: async (newFaculty) => {
-      const res = await axios.post(
-        'http://localhost:3001/faculty/create-faculty',
-        newFaculty
-      );
+      const res = await axios.post('http://localhost:3001/faculty/create-faculty', newFaculty);
       return res.data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || 'Faculty created successfully!');
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        phone: '',
-        specialization: '',
-      });
+      if (data && typeof data.message === 'string') {
+        toast.success(data.message);
+      } else {
+        toast.success("Faculty created successfully!");
+      }
+      reset();
     },
     onError: (err) => {
       const errorMessage = err.response?.data?.message || 'Failed to create faculty';
@@ -52,18 +43,8 @@ const AddFaculty = () => {
     },
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    const { name, email, phone, password, specialization } = formData;
-
-    if (!name || !email || !phone || !password || !specialization) {
-      toast.error('All fields are required!');
-      return;
-    }
-
-    // ✅ trigger mutation
-    mutate({ name, email, phone, password, specialization });
+  const onSubmit = (data) => {
+    mutate(data);
   };
 
   const handleLogout = () => {
@@ -96,61 +77,51 @@ const AddFaculty = () => {
           <div className="form-wrapper">
             <h2 className="form-heading">Create Faculty</h2>
 
-            <form onSubmit={handleSubmit} className="faculty-form">
+            <form onSubmit={handleSubmit(onSubmit)} className="faculty-form">
               <div className="form-group">
                 <input
                   type="text"
-                  name="name"
                   placeholder="Faculty Name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  autoComplete="off"
-                  required
+                  {...register('name', { required: 'Name is required' })}
                 />
+                {errors.name && <p className="error-text">{errors.name.message}</p>}
               </div>
+
               <div className="form-group">
                 <input
                   type="email"
-                  name="email"
                   placeholder="Faculty Email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  autoComplete="off"
-                  required
+                  {...register('email', { required: 'Email is required' })}
                 />
+                {errors.email && <p className="error-text">{errors.email.message}</p>}
               </div>
+
               <div className="form-group">
                 <input
                   type="password"
-                  name="password"
                   placeholder="Faculty Password"
-                  value={formData.password}
-                  onChange={handleChange}
                   autoComplete="new-password"
-                  required
+                  {...register('password', { required: 'Password is required' })}
                 />
+                {errors.password && <p className="error-text">{errors.password.message}</p>}
               </div>
+
               <div className="form-group">
                 <input
                   type="tel"
-                  name="phone"
                   placeholder="Faculty Phone (+1234567890)"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  autoComplete="off"
-                  required
+                  {...register('phone', { required: 'Phone is required' })}
                 />
+                {errors.phone && <p className="error-text">{errors.phone.message}</p>}
               </div>
+
               <div className="form-group">
                 <input
                   type="text"
-                  name="specialization"
                   placeholder="Specialization"
-                  value={formData.specialization}
-                  onChange={handleChange}
-                  autoComplete="off"
-                  required
+                  {...register('specialization', { required: 'Specialization is required' })}
                 />
+                {errors.specialization && <p className="error-text">{errors.specialization.message}</p>}
               </div>
 
               <div className="flex justify-between">
@@ -161,8 +132,8 @@ const AddFaculty = () => {
                 >
                   ← Back to Faculty List
                 </button>
-                <button type="submit" className="submit-button" disabled={isPending}>
-                  {isPending ? 'Creating...' : 'Create Faculty'}
+                <button type="submit" className="submit-button" disabled={isCreating}>
+                  {isCreating ? 'Creating...' : 'Create Faculty'}
                 </button>
               </div>
             </form>

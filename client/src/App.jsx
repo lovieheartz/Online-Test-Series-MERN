@@ -25,14 +25,8 @@ function App() {
     <BrowserRouter>
       <ToastContainer
         position="top-right"
-        autoClose={2000}
+        autoClose={1500}
         hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
       />
 
       <Routes>
@@ -43,8 +37,8 @@ function App() {
         <Route path='/create-admin' element={<CreateAdmin />} />
         <Route path='/admin/create-admin' element={<AdminCreateAdmin />} />
         <Route path='/faculty/create-faculty' element={<CreateFaculty />} />
-        <Route path='/faculty/add-faculty' element={<AddFaculty />} />
-        <Route path='/admin/faculty' element={<FacultyList />} />  
+        {/* <Route path='/faculty/add-faculty' element={<AddFaculty />} />
+        <Route path='/admin/faculty' element={<FacultyList />} />  */}
         <Route path='/forgot-password' element={<ForgotPassword />} />
         <Route path='/reset-password' element={<ResetPassword />} />
 

@@ -1,76 +1,80 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useForm } from 'react-hook-form';
 import { AuthContext } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import axios from 'axios';
 import './Dashboard.css';
-
-const fetchFacultyData = async () => {
-  const response = await fetch('http://localhost:3001/faculty/all-faculties');
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to fetch faculty data');
-  }
-
-  const result = await response.json();
-  if (!result.data || !Array.isArray(result.data)) {
-    throw new Error('Invalid data format received from server');
-  }
-
-  return result.data;
-};
-
-const deleteFaculty = async (facultyId) => {
-  const response = await fetch(`http://localhost:3001/faculty/delete/${facultyId}`, {
-    method: 'DELETE',
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Failed to delete faculty');
-  }
-
-  return facultyId;
-};
 
 const FacultyList = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+  // Form handling for search functionality
+  const { register: registerSearch, watch } = useForm();
+  const searchTerm = watch('search') || '';
 
+  // Fetch faculty data using useQuery
   const {
     data: facultyData = [],
-    isLoading,
-    isError,
-    error,
+    isLoading: isFetchingFaculties,
+    isError: isFetchError,
+    error: fetchError,
+    refetch: refetchFaculties,
   } = useQuery({
     queryKey: ['faculties'],
-    queryFn: fetchFacultyData,
+    queryFn: async () => {
+      const { data } = await axios.get('http://localhost:3001/faculty/all-faculties');
+      if (!data.data || !Array.isArray(data.data)) {
+        throw new Error('Invalid data format received from server');
+      }
+      return data.data;
+    },
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const mutation = useMutation({
-    mutationFn: deleteFaculty,
-    onSuccess: (deletedId) => {
+  // Delete mutation using useMutation
+  const { mutate: deleteFacultyMutation, isPending: isDeleting } = useMutation({
+    mutationFn: async (facultyId) => {
+      const { data } = await axios.delete(`http://localhost:3001/faculty/delete/${facultyId}`);
+      return data.deletedId;
+    },
+    onMutate: async (facultyId) => {
+      await queryClient.cancelQueries(['faculties']);
+      
+      const previousFaculties = queryClient.getQueryData(['faculties']);
+      
       queryClient.setQueryData(['faculties'], (old) =>
-        old ? old.filter((f) => f._id !== deletedId) : []
+        old ? old.filter((f) => f._id !== facultyId) : []
       );
+      
+      return { previousFaculties };
+    },
+    onError: (err, facultyId, context) => {
+      toast.error(err.response?.data?.message || 'Failed to delete faculty');
+      if (context?.previousFaculties) {
+        queryClient.setQueryData(['faculties'], context.previousFaculties);
+      }
+    },
+    onSuccess: (deletedId) => {
       toast.success('Faculty deleted successfully');
     },
-    onError: (err) => {
-      toast.error(err.message);
+    onSettled: () => {
+      queryClient.invalidateQueries(['faculties']);
     },
   });
 
   const handleDeleteFaculty = (facultyId) => {
     if (window.confirm('Are you sure you want to delete this faculty member?')) {
-      mutation.mutate(facultyId);
+      deleteFacultyMutation(facultyId);
     }
   };
 
@@ -81,6 +85,16 @@ const FacultyList = () => {
     navigate('/login', { replace: true });
   };
 
+  // Filter faculty based on search term
+  const filteredFaculties = facultyData.filter((faculty) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      faculty.name.toLowerCase().includes(searchLower) ||
+      faculty.email.toLowerCase().includes(searchLower) ||
+      (faculty.specialization && faculty.specialization.toLowerCase().includes(searchLower))
+    );
+  });
+
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-50 p-5">
@@ -90,7 +104,7 @@ const FacultyList = () => {
     );
   }
 
-  if (isLoading) {
+  if (isFetchingFaculties) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-xl">Loading faculty data...</div>
@@ -98,12 +112,12 @@ const FacultyList = () => {
     );
   }
 
-  if (isError) {
+  if (isFetchError) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-50 p-5">
-        <h2 className="text-2xl text-red-600 mb-4">Error: {error.message}</h2>
+        <h2 className="text-2xl text-red-600 mb-4">Error: {fetchError.message}</h2>
         <button
-          onClick={() => queryClient.invalidateQueries(['faculties'])}
+          onClick={() => refetchFaculties()}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           Try Again
@@ -118,8 +132,6 @@ const FacultyList = () => {
       <div className="main">
         <Header
           user={user}
-          toggleDropdown={toggleDropdown}
-          isDropdownOpen={isDropdownOpen}
           handleLogout={handleLogout}
           navigate={navigate}
         />
@@ -128,12 +140,22 @@ const FacultyList = () => {
           <div className="bg-white rounded-xl shadow-sm px-4 py-4 w-full">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
               <h1 className="text-xl font-semibold text-gray-800">Faculty Management</h1>
-              <button
-                onClick={handleAddFaculty}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm md:text-base"
-              >
-                ➕ Add Faculty
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <form className="w-full sm:w-64">
+                  <input
+                    {...registerSearch('search')}
+                    type="text"
+                    placeholder="Search faculty..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </form>
+                <button
+                  onClick={handleAddFaculty}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm md:text-base whitespace-nowrap"
+                >
+                  ➕ Add Faculty
+                </button>
+              </div>
             </div>
 
             <div className="w-full overflow-x-auto">
@@ -147,25 +169,27 @@ const FacultyList = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {facultyData.length > 0 ? (
-                    facultyData.map((faculty) => (
+                  {filteredFaculties.length > 0 ? (
+                    filteredFaculties.map((faculty) => (
                       <tr key={faculty._id} className="hover:bg-gray-50">
                         <td className="px-3 py-3 text-gray-900">{faculty.name}</td>
                         <td className="px-3 py-3 text-gray-600">{faculty.email}</td>
-                        <td className="px-3 py-3 text-gray-600">{faculty.specialization}</td>
+                        <td className="px-3 py-3 text-gray-600">{faculty.specialization || '-'}</td>
                         <td className="px-3 py-3 text-gray-600">
                           <div className="flex flex-wrap gap-2">
                             <button
                               onClick={() => navigate(`/admin/edit-faculty/${faculty._id}`)}
                               className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                              disabled={isDeleting}
                             >
                               ✏️ Edit
                             </button>
                             <button
                               onClick={() => handleDeleteFaculty(faculty._id)}
                               className="text-red-600 hover:text-red-800 flex items-center gap-1"
+                              disabled={isDeleting}
                             >
-                              🗑️ Remove
+                              {isDeleting ? '⏳ Deleting...' : '🗑️ Remove'}
                             </button>
                           </div>
                         </td>
@@ -174,7 +198,7 @@ const FacultyList = () => {
                   ) : (
                     <tr>
                       <td colSpan="4" className="px-3 py-3 text-center text-gray-500">
-                        No faculty members found
+                        {searchTerm ? 'No matching faculty found' : 'No faculty members found'}
                       </td>
                     </tr>
                   )}
