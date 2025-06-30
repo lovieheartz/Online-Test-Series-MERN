@@ -1,39 +1,65 @@
-import React, { useContext, useState } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/FacultySiderbar';
-import Header from '../components/FacultyHeader'; // ✅ Import new Header
+import Header from '../components/FacultyHeader';
 import Card from '../components/Card';
 import Footer from '../components/FacultyFooter';
-import './Dashboard.css';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 
 const FacultyDashboard = () => {
-  const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const token = sessionStorage.getItem('authToken');
 
   const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
 
   const handleLogout = () => {
-    logout();
-    navigate('/login',{replace:true});
+    sessionStorage.clear();
+    navigate('/login', { replace: true });
   };
 
-  if (!user) {
+  const {
+    data: profileData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['facultyProfile'],
+    queryFn: async () => {
+      const res = await axios.get('http://localhost:3001/faculty/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.data.data;
+    },
+    enabled: !!token,
+  });
+
+  if (isLoading) {
+    return <div className="p-10 text-center">Loading profile...</div>;
+  }
+
+  if (isError) {
     return (
-      <div style={styles.container}>
-        <h1 style={styles.heading}>You are not logged in</h1>
-        <p style={styles.subheading}>Please login to access your dashboard.</p>
+      <div className="p-10 text-center text-red-600">
+        Error: {error.message}
       </div>
     );
   }
+
+  const user = {
+    name: profileData.name,
+    email: profileData.email,
+    profilePicture: profileData.avatar
+      ? `http://localhost:3001${profileData.avatar}`
+      : null,
+  };
 
   return (
     <div className="dashboard">
       <Sidebar />
 
       <div className="main">
-        {/* ✅ Use Header component */}
         <Header
           user={user}
           toggleDropdown={toggleDropdown}
@@ -52,30 +78,6 @@ const FacultyDashboard = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100vh',
-    backgroundColor: '#f0f4f8',
-    padding: '20px',
-  },
-  heading: {
-    fontSize: '32px',
-    color: '#333',
-    marginBottom: '10px',
-    textAlign: 'center',
-  },
-  subheading: {
-    fontSize: '18px',
-    color: '#666',
-    marginBottom: '30px',
-    textAlign: 'center',
-  },
 };
 
 export default FacultyDashboard;

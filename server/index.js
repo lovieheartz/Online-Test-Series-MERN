@@ -2,12 +2,16 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path"); // ✅ add this
 
 const app = express();
 
 // Middleware
 app.use(express.json());
 app.use(cors());
+
+// ✅ Serve static uploads folder
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <== add this line
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
@@ -18,7 +22,7 @@ mongoose.connect(process.env.MONGO_URI, {
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
-app.use("/", require("./routes/auth")); // Mount all auth-related routes under /auth
+app.use("/", require("./routes/auth"));
 app.use("/student", require("./routes/studentRoutes"));
 app.use("/admin", require("./routes/adminRoutes"));
 app.use("/faculty", require("./routes/facultyRoutes"));

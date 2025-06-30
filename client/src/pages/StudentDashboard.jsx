@@ -1,11 +1,13 @@
-import React, { useContext, useState } from 'react';
-import { AuthContext } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/StudentSidebar';
-import Header from '../components/StudentHeader'; // ✅ Import new Header
-import Card from '../components/Card';
-import Footer from '../components/StudentFooter';
-import './Dashboard.css';
+import React, { useContext, useState } from "react";
+import { AuthContext } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import Sidebar from "../components/StudentSidebar";
+import Header from "../components/StudentHeader";
+import Card from "../components/Card";
+import Footer from "../components/StudentFooter";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import "./Dashboard.css";
 
 const StudentDashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -16,8 +18,22 @@ const StudentDashboard = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login',{replace:true});
+    navigate("/login", { replace: true });
   };
+
+  const token = sessionStorage.getItem("authToken");
+
+  // ✅ Fetch profile with avatar
+  const { data: profileData, isLoading, isError, error } = useQuery({
+    queryKey: ["studentProfile"],
+    queryFn: async () => {
+      const res = await axios.get("http://localhost:3001/student/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.data.data;
+    },
+    enabled: !!token,
+  });
 
   if (!user) {
     return (
@@ -28,14 +44,30 @@ const StudentDashboard = () => {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div style={styles.container}>
+        <h2 style={styles.heading}>Loading profile...</h2>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div style={styles.container}>
+        <h2 style={styles.heading}>Error loading profile</h2>
+        <p style={styles.subheading}>{error.message}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard">
       <Sidebar />
 
       <div className="main">
-        {/* ✅ Use Header component */}
         <Header
-          user={user}
+          user={profileData}
           toggleDropdown={toggleDropdown}
           isDropdownOpen={isDropdownOpen}
           handleLogout={handleLogout}
@@ -56,25 +88,25 @@ const StudentDashboard = () => {
 
 const styles = {
   container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100vh',
-    backgroundColor: '#f0f4f8',
-    padding: '20px',
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100vh",
+    backgroundColor: "#f0f4f8",
+    padding: "20px",
   },
   heading: {
-    fontSize: '32px',
-    color: '#333',
-    marginBottom: '10px',
-    textAlign: 'center',
+    fontSize: "32px",
+    color: "#333",
+    marginBottom: "10px",
+    textAlign: "center",
   },
   subheading: {
-    fontSize: '18px',
-    color: '#666',
-    marginBottom: '30px',
-    textAlign: 'center',
+    fontSize: "18px",
+    color: "#666",
+    marginBottom: "30px",
+    textAlign: "center",
   },
 };
 

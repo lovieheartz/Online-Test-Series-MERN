@@ -12,9 +12,9 @@ const Header = ({ user, toggleDropdown, isDropdownOpen, handleLogout, navigate }
           className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center cursor-pointer text-white text-xl font-bold overflow-hidden"
           onClick={toggleDropdown}
         >
-          {user.profilePicture ? (
+          {user.avatar ? (
             <img
-              src={user.profilePicture}
+              src={`http://localhost:3001${user.avatar}`}
               alt="Profile"
               className="w-full h-full object-cover rounded-full"
             />

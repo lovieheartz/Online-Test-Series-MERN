@@ -16,6 +16,7 @@ import AddFaculty from './pages/AddFaculty';
 import './index.css';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Profile from "./pages/Profile"; 
 
 // ✅ Optional: Add React Query DevTools
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -44,7 +45,7 @@ function App() {
 
         {/* Protected routes */}
         <Route path='/home' element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path='/profile' element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path='/profile' element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path='/student-dashboard' element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
         <Route path='/faculty-dashboard' element={<ProtectedRoute><FacultyDashboard /></ProtectedRoute>} />
         <Route path='/admin/faculty' element={<ProtectedRoute><FacultyList /></ProtectedRoute>} />

@@ -1,24 +1,33 @@
 import React from 'react';
 
 const Header = ({ user, toggleDropdown, isDropdownOpen, handleLogout, navigate }) => {
-  const profileLetter = user?.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+  const profileLetter = user?.name
+    ? user.name.charAt(0).toUpperCase()
+    : user.email.charAt(0).toUpperCase();
+
+  // Handle relative vs absolute URL
+  const profilePictureUrl = user.profilePicture
+    ? user.profilePicture.startsWith("http")
+      ? user.profilePicture
+      : `http://localhost:3001${user.profilePicture}`
+    : null;
 
   return (
     <header className="bg-gray-900 text-gray-100 px-4 py-4 flex justify-between items-center relative z-10">
-      {/* Header text with responsive sizing and truncation */}
+      {/* Header text */}
       <div className="text-sm sm:text-base md:text-lg font-medium max-w-[50vw] sm:max-w-[60vw] truncate">
         Welcome, {user.name || user.email}
       </div>
 
-      {/* Profile dropdown with fixed spacing */}
+      {/* Profile dropdown */}
       <div className="relative z-20 flex-shrink-0 ml-2 sm:ml-4">
         <div
           className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-blue-500 flex items-center justify-center cursor-pointer text-white text-lg sm:text-xl font-bold overflow-hidden"
           onClick={toggleDropdown}
         >
-          {user.profilePicture ? (
+          {profilePictureUrl ? (
             <img
-              src={user.profilePicture}
+              src={profilePictureUrl}
               alt="Profile"
               className="w-full h-full object-cover rounded-full"
             />
