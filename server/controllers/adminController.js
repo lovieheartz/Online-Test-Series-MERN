@@ -1,4 +1,6 @@
 const bcrypt = require("bcryptjs");
+const path = require("path");
+const fs = require("fs");
 const Admin = require("../models/Admin");
 
 // ✅ Check if any admin exists
@@ -27,7 +29,6 @@ exports.createFirstAdmin = async (req, res) => {
     }
 
     const newAdmin = new Admin({ name, email, phone, password, role: "admin" });
-
     await newAdmin.save();
 
     res.status(201).json({
@@ -45,7 +46,7 @@ exports.createFirstAdmin = async (req, res) => {
   }
 };
 
-// ✅ Create admin by another admin (after verifying credentials)
+// ✅ Create admin by another admin
 exports.createAdminByAdmin = async (req, res) => {
   const { name, email, phone, password, existingAdminEmail, existingAdminPassword } = req.body;
 
@@ -62,7 +63,6 @@ exports.createAdminByAdmin = async (req, res) => {
     }
 
     const newAdmin = new Admin({ name, email, phone, password, role: "admin" });
-
     await newAdmin.save();
 
     res.status(201).json({
@@ -84,7 +84,6 @@ exports.createAdminByAdmin = async (req, res) => {
 exports.getAdminProfile = async (req, res) => {
   try {
     const adminId = req.user.id;
-
     const admin = await Admin.findById(adminId).select("-password");
 
     if (!admin) {
@@ -105,7 +104,6 @@ exports.updateAdminProfile = async (req, res) => {
     const { name, email, phone } = req.body;
 
     const admin = await Admin.findById(adminId);
-
     if (!admin) {
       return res.status(404).json({ success: false, message: "Admin not found" });
     }
@@ -127,7 +125,7 @@ exports.updateAdminProfile = async (req, res) => {
   }
 };
 
-// ✅ Upload admin avatar
+// ✅ Upload admin avatar (with old file deletion)
 exports.uploadAdminAvatar = async (req, res) => {
   try {
     const adminId = req.user.id;
@@ -141,7 +139,17 @@ exports.uploadAdminAvatar = async (req, res) => {
       return res.status(400).json({ success: false, message: "No file uploaded" });
     }
 
-    // Save relative path to the avatar field
+    // Delete the previous avatar if it exists
+    if (admin.avatar) {
+      const previousPath = path.join(__dirname, "..", admin.avatar);
+      fs.unlink(previousPath, (err) => {
+        if (err) {
+          console.error("Error deleting previous avatar:", err.message);
+        }
+      });
+    }
+
+    // Save the new avatar
     admin.avatar = `/uploads/Avatar_Admin/${req.file.filename}`;
     await admin.save();
 
@@ -163,6 +171,16 @@ exports.deleteAdmin = async (req, res) => {
 
     if (!admin) {
       return res.status(404).json({ message: "Admin not found" });
+    }
+
+    // Optionally, remove the avatar from disk
+    if (admin.avatar) {
+      const avatarPath = path.join(__dirname, "..", admin.avatar);
+      fs.unlink(avatarPath, (err) => {
+        if (err) {
+          console.error("Error deleting avatar during admin deletion:", err.message);
+        }
+      });
     }
 
     res.status(200).json({

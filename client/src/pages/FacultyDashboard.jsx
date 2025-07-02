@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/FacultySiderbar';
+import Sidebar from '../components/FacultySidebar';
 import Header from '../components/FacultyHeader';
 import Card from '../components/Card';
 import Footer from '../components/FacultyFooter';

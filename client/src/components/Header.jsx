@@ -1,25 +1,34 @@
 import React from 'react';
 
 const Header = ({ user, toggleDropdown, isDropdownOpen, handleLogout, navigate }) => {
-  const profileLetter = user?.name
-    ? user.name.charAt(0).toUpperCase()
-    : user.email.charAt(0).toUpperCase();
+  // Defensive fallback
+  const safeUser = user || {};
 
-  // Handle relative vs absolute URL
-  const profilePictureUrl = user.profilePicture
-    ? user.profilePicture.startsWith("http")
-      ? user.profilePicture
-      : `http://localhost:3001${user.profilePicture}`
+  // Compute profile letter
+  const profileLetter =
+    safeUser.name && safeUser.name.length > 0
+      ? safeUser.name.charAt(0).toUpperCase()
+      : safeUser.email && safeUser.email.length > 0
+      ? safeUser.email.charAt(0).toUpperCase()
+      : '?';
+
+  // Use avatar or profilePicture field
+  const rawProfilePicture =
+    safeUser.profilePicture || safeUser.avatar || null;
+
+  // Compute the absolute URL safely
+  const profilePictureUrl = rawProfilePicture
+    ? rawProfilePicture.startsWith('http')
+      ? rawProfilePicture
+      : `http://localhost:3001${rawProfilePicture}`
     : null;
 
   return (
     <header className="bg-gray-900 text-gray-100 px-4 py-4 flex justify-between items-center relative z-10">
-      {/* Header text */}
       <div className="text-sm sm:text-base md:text-lg font-medium max-w-[50vw] sm:max-w-[60vw] truncate">
-        Welcome, {user.name || user.email}
+        Welcome, {safeUser.name || safeUser.email || 'User'}
       </div>
 
-      {/* Profile dropdown */}
       <div className="relative z-20 flex-shrink-0 ml-2 sm:ml-4">
         <div
           className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-blue-500 flex items-center justify-center cursor-pointer text-white text-lg sm:text-xl font-bold overflow-hidden"

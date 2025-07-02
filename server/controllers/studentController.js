@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const Student = require("../models/Student");
 const path = require("path");
+const fs = require("fs");
 
 // ✅ Register student (no manual hashing)
 exports.registerStudent = async (req, res) => {
@@ -74,7 +75,7 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// ✅ Upload student avatar
+// ✅ Upload student avatar (with deletion of previous file)
 exports.uploadAvatar = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: "No file uploaded" });
@@ -86,11 +87,24 @@ exports.uploadAvatar = async (req, res) => {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    // Save the relative path
+    // Delete the old avatar if exists
+    if (student.avatar) {
+      const oldPath = path.join(__dirname, "..", student.avatar);
+      fs.unlink(oldPath, (err) => {
+        if (err) {
+          console.error("Error deleting previous avatar:", err.message);
+        }
+      });
+    }
+
+    // Save the new avatar path
     student.avatar = `/uploads/Avatar_Student/${req.file.filename}`;
     await student.save();
 
-    res.json({ message: "Avatar uploaded successfully.", avatar: student.avatar });
+    res.json({
+      message: "Avatar uploaded successfully.",
+      avatar: student.avatar
+    });
   } catch (err) {
     console.error("Upload avatar error:", err);
     res.status(500).json({ message: "Server error" });

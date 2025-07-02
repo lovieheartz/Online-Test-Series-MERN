@@ -1,4 +1,6 @@
 const bcrypt = require("bcryptjs");
+const path = require("path");
+const fs = require("fs");
 const Faculty = require("../models/Faculty");
 
 // CREATE FACULTY
@@ -81,6 +83,16 @@ exports.deleteFaculty = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Faculty not found"
+      });
+    }
+
+    // Remove the avatar file if it exists
+    if (faculty.avatar) {
+      const avatarPath = path.join(__dirname, "..", faculty.avatar);
+      fs.unlink(avatarPath, (err) => {
+        if (err) {
+          console.error("Error deleting avatar during faculty deletion:", err.message);
+        }
       });
     }
 
@@ -167,7 +179,7 @@ exports.updateFacultyProfile = async (req, res) => {
   }
 };
 
-// NEW: UPLOAD AVATAR
+// UPLOAD AVATAR (with deletion of old file)
 exports.updateAvatar = async (req, res) => {
   try {
     const facultyId = req.user.id;
@@ -179,14 +191,7 @@ exports.updateAvatar = async (req, res) => {
       });
     }
 
-    // Save relative path to DB
-    const avatarPath = `/uploads/Avatar_Faculty/${req.file.filename}`;
-
-    const faculty = await Faculty.findByIdAndUpdate(
-      facultyId,
-      { avatar: avatarPath },
-      { new: true }
-    );
+    const faculty = await Faculty.findById(facultyId);
 
     if (!faculty) {
       return res.status(404).json({
@@ -194,6 +199,21 @@ exports.updateAvatar = async (req, res) => {
         message: "Faculty not found"
       });
     }
+
+    // Delete previous avatar if it exists
+    if (faculty.avatar) {
+      const oldPath = path.join(__dirname, "..", faculty.avatar);
+      fs.unlink(oldPath, (err) => {
+        if (err) {
+          console.error("Error deleting previous avatar:", err.message);
+        }
+      });
+    }
+
+    // Save new avatar path
+    const avatarPath = `/uploads/Avatar_Faculty/${req.file.filename}`;
+    faculty.avatar = avatarPath;
+    await faculty.save();
 
     res.status(200).json({
       success: true,

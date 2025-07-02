@@ -40,7 +40,22 @@ const FacultyList = () => {
     retryDelay: 1000,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-
+  // Fetch current admin profile (with avatar)
+  const {
+    data: profileData,
+    isLoading: isProfileLoading,
+    isError: isProfileError,
+    error: profileError,
+  } = useQuery({
+    queryKey: ['adminProfile'],
+    queryFn: async () => {
+      const { data } = await axios.get('http://localhost:3001/admin/profile', {
+        headers: { Authorization: `Bearer ${sessionStorage.getItem('authToken')}` },
+      });
+      return data.data;
+    },
+    enabled: !!user, // Only fetch if logged in
+  });
   // Delete mutation using useMutation
   const { mutate: deleteFacultyMutation, isPending: isDeleting } = useMutation({
     mutationFn: async (facultyId) => {
@@ -131,7 +146,7 @@ const FacultyList = () => {
       <Sidebar />
       <div className="main">
         <Header
-          user={user}
+          user={profileData || user}
           handleLogout={handleLogout}
           navigate={navigate}
         />
