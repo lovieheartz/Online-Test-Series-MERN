@@ -16,7 +16,6 @@ const FacultyProfile = () => {
   const profileEndpoint = `http://localhost:3001/faculty/profile`;
   const avatarEndpoint = `http://localhost:3001/faculty/upload-avatar`;
 
-  // Query to fetch profile
   const {
     data: profileData,
     isLoading,
@@ -39,7 +38,6 @@ const FacultyProfile = () => {
     if (profileData) reset(profileData);
   }, [profileData, reset]);
 
-  // Mutation for updating profile
   const updateProfileMutation = useMutation({
     mutationFn: (data) =>
       axios.put(profileEndpoint, data, {
@@ -58,7 +56,6 @@ const FacultyProfile = () => {
     },
   });
 
-  // Mutation for uploading avatar
   const uploadAvatarMutation = useMutation({
     mutationFn: async (file) => {
       const formData = new FormData();
@@ -153,38 +150,12 @@ const ProfileContent = ({
 }) => (
   <div className="content-container px-3 py-4 w-full mx-auto max-w-full">
     <div className="bg-white rounded-xl shadow-sm px-6 py-6 w-full">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full overflow-hidden border border-gray-300">
-            <img
-              src={
-                profileData.avatar
-                  ? `http://localhost:3001${profileData.avatar}`
-                  : "https://via.placeholder.com/150"
-              }
-              alt="Avatar"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <h1 className="text-xl font-semibold text-gray-800">My Profile</h1>
-        </div>
-        {!isEditing ? (
-          <button
-            className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            onClick={() => setIsEditing(true)}
-          >
-            Edit
-          </button>
-        ) : (
-          <button
-            className="px-3 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-            onClick={reset}
-          >
-            Cancel
-          </button>
-        )}
+      {/* Avatar Centered */}
+      <div className="flex justify-center mb-6">
+        <Avatar avatar={profileData.avatar} />
       </div>
 
+      {/* Upload Avatar */}
       <div className="flex justify-center mb-6">
         <label
           htmlFor="avatarUpload"
@@ -208,24 +179,53 @@ const ProfileContent = ({
         <InputField label="Name" register={register("name")} disabled={!isEditing} />
         <InputField label="Email" register={register("email")} disabled={!isEditing} />
         <InputField label="Phone" register={register("phone")} disabled={!isEditing} />
-        <InputField
-          label="Specialization"
-          register={register("specialization")}
-          disabled={!isEditing}
-        />
-        {isEditing && (
-          <div className="flex justify-end">
+        <InputField label="Specialization" register={register("specialization")} disabled={!isEditing} />
+
+        <div className="flex flex-col sm:flex-row justify-between gap-2 mt-4">
+          {!isEditing ? (
+            <button
+              type="button"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full sm:w-auto"
+              onClick={() => setIsEditing(true)}
+            >
+              Edit
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 w-full sm:w-auto"
+              onClick={reset}
+            >
+              Cancel
+            </button>
+          )}
+
+          {isEditing && (
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 w-full sm:w-auto"
             >
               {loading ? "Saving..." : "Save Changes"}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </form>
     </div>
+  </div>
+);
+
+const Avatar = ({ avatar }) => (
+  <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300">
+    <img
+      src={
+        avatar
+          ? `http://localhost:3001${avatar}`
+          : "https://via.placeholder.com/150"
+      }
+      alt="Avatar"
+      className="w-full h-full object-cover"
+    />
   </div>
 );
 

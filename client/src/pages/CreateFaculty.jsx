@@ -13,6 +13,7 @@ const CreateFaculty = () => {
     phone: "",
     specialization: "",
   });
+  const [avatar, setAvatar] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -20,9 +21,22 @@ const CreateFaculty = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleFileChange = (e) => {
+    setAvatar(e.target.files[0]);
+  };
+
   const createFacultyMutation = useMutation({
-    mutationFn: async (newFaculty) => {
-      const res = await axios.post("http://localhost:3001/faculty/create-faculty", newFaculty);
+    mutationFn: async (data) => {
+      const config = {
+        headers: { "Content-Type": "multipart/form-data" },
+      };
+      const formPayload = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        formPayload.append(key, value);
+      });
+      if (avatar) formPayload.append("avatar", avatar);
+
+      const res = await axios.post("http://localhost:3001/faculty/create-faculty", formPayload, config);
       return res.data;
     },
     onSuccess: (data) => {
@@ -35,6 +49,7 @@ const CreateFaculty = () => {
         password: "",
         specialization: "",
       });
+      setAvatar(null);
 
       setTimeout(() => {
         navigate("/login");
@@ -54,7 +69,6 @@ const CreateFaculty = () => {
     setSuccess("");
 
     const { name, email, phone, password, specialization } = formData;
-
     if (!name || !email || !phone || !password || !specialization) {
       setError("All fields are required.");
       return;
@@ -69,7 +83,7 @@ const CreateFaculty = () => {
       {error && <p style={styles.error}>{error}</p>}
       {success && <p style={styles.success}>{success}</p>}
 
-      <form onSubmit={handleSubmit} style={styles.form}>
+      <form onSubmit={handleSubmit} style={styles.form} encType="multipart/form-data">
         <input
           style={styles.input}
           type="text"
@@ -115,6 +129,16 @@ const CreateFaculty = () => {
           onChange={handleChange}
           autoComplete="new-password"
         />
+
+        {/* Avatar upload field */}
+        <input
+          style={{ ...styles.input, padding: "8px" }}
+          type="file"
+          name="avatar"
+          accept="image/*"
+          onChange={handleFileChange}
+        />
+
         <button
           type="submit"
           style={styles.submitButton}

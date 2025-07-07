@@ -3,33 +3,40 @@ const path = require("path");
 const fs = require("fs");
 const Faculty = require("../models/Faculty");
 
-// CREATE FACULTY
 exports.createFaculty = async (req, res) => {
-  const { name, email, password, phone, specialization } = req.body;
-
-  if (!name || !email || !password || !phone || !specialization) {
-    return res.status(400).json({
-      success: false,
-      message: "All fields are required."
-    });
-  }
-
   try {
+    const { name, email, password, phone, specialization } = req.body;
+
+    if (!name || !email || !password || !phone || !specialization) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required.",
+      });
+    }
+
     const duplicate = await Faculty.findOne({ email });
     if (duplicate) {
       return res.status(409).json({
         success: false,
-        message: "Faculty email already exists."
+        message: "Faculty email already exists.",
       });
     }
+
+    let avatarPath = null;
+    if (req.file) {
+      avatarPath = `/uploads/Avatar_Faculty/${req.file.filename}`;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10); // ✅ HASHING
 
     const newFaculty = new Faculty({
       name,
       email,
       phone,
       specialization,
-      password,
+      password: hashedPassword,
       role: "faculty",
+      avatar: avatarPath,
     });
 
     await newFaculty.save();
@@ -41,24 +48,23 @@ exports.createFaculty = async (req, res) => {
         id: newFaculty._id,
         name: newFaculty.name,
         email: newFaculty.email,
-        specialization: newFaculty.specialization
-      }
+        specialization: newFaculty.specialization,
+        avatar: newFaculty.avatar,
+      },
     });
   } catch (err) {
     console.error("Create faculty error:", err);
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: err.message
+      error: err.message,
     });
   }
 };
 
-// GET ALL FACULTIES
 exports.getAllFaculties = async (req, res) => {
   try {
-    const faculties = await Faculty.find({}, 'name email specialization phone createdAt').sort({ createdAt: -1 });
-
+    const faculties = await Faculty.find({}, 'name email specialization phone createdAt avatar');
     res.status(200).json({
       success: true,
       count: faculties.length,
@@ -74,7 +80,6 @@ exports.getAllFaculties = async (req, res) => {
   }
 };
 
-// DELETE FACULTY
 exports.deleteFaculty = async (req, res) => {
   try {
     const faculty = await Faculty.findByIdAndDelete(req.params.id);
@@ -86,7 +91,6 @@ exports.deleteFaculty = async (req, res) => {
       });
     }
 
-    // Remove the avatar file if it exists
     if (faculty.avatar) {
       const avatarPath = path.join(__dirname, "..", faculty.avatar);
       fs.unlink(avatarPath, (err) => {
@@ -114,7 +118,6 @@ exports.deleteFaculty = async (req, res) => {
   }
 };
 
-// GET CURRENT FACULTY PROFILE
 exports.getFacultyProfile = async (req, res) => {
   try {
     const facultyId = req.user.id;
@@ -142,7 +145,6 @@ exports.getFacultyProfile = async (req, res) => {
   }
 };
 
-// UPDATE CURRENT FACULTY PROFILE
 exports.updateFacultyProfile = async (req, res) => {
   try {
     const facultyId = req.user.id;
@@ -179,7 +181,6 @@ exports.updateFacultyProfile = async (req, res) => {
   }
 };
 
-// UPLOAD AVATAR (with deletion of old file)
 exports.updateAvatar = async (req, res) => {
   try {
     const facultyId = req.user.id;
@@ -200,7 +201,6 @@ exports.updateAvatar = async (req, res) => {
       });
     }
 
-    // Delete previous avatar if it exists
     if (faculty.avatar) {
       const oldPath = path.join(__dirname, "..", faculty.avatar);
       fs.unlink(oldPath, (err) => {
@@ -210,7 +210,6 @@ exports.updateAvatar = async (req, res) => {
       });
     }
 
-    // Save new avatar path
     const avatarPath = `/uploads/Avatar_Faculty/${req.file.filename}`;
     faculty.avatar = avatarPath;
     await faculty.save();
@@ -229,3 +228,55 @@ exports.updateAvatar = async (req, res) => {
     });
   }
 };
+// GET SINGLE FACULTY BY ID
+exports.getSingleFaculty = async (req, res) => {
+  try {
+    const faculty = await Faculty.findById(req.params.id).select("-password");
+    if (!faculty) {
+      return res.status(404).json({ success: false, message: "Faculty not found" });
+    }
+    res.status(200).json({ success: true, data: faculty });
+  } catch (err) {
+    console.error("Get single faculty error:", err);
+    res.status(500).json({ success: false, message: "Internal server error", error: err.message });
+  }
+};
+
+// UPDATE FACULTY BY ID
+exports.updateFacultyById = async (req, res) => {
+  try {
+    const faculty = await Faculty.findById(req.params.id);
+    if (!faculty) {
+      return res.status(404).json({ success: false, message: "Faculty not found" });
+    }
+
+    // ✅ Defensive checks: Only update if value is provided
+    if (req.body.name !== undefined) faculty.name = req.body.name;
+    if (req.body.email !== undefined) faculty.email = req.body.email;
+    if (req.body.phone !== undefined) faculty.phone = req.body.phone;
+    if (req.body.specialization !== undefined) faculty.specialization = req.body.specialization;
+
+    // ✅ Handle avatar upload safely
+    if (req.file) {
+      const newAvatarPath = `/uploads/Avatar_Faculty/${req.file.filename}`;
+
+      // Delete old avatar
+      if (faculty.avatar) {
+        const oldPath = path.join(__dirname, "..", faculty.avatar);
+        fs.unlink(oldPath, (err) => {
+          if (err) console.error("Error deleting old avatar:", err.message);
+        });
+      }
+
+      faculty.avatar = newAvatarPath;
+    }
+
+    const updated = await faculty.save();
+    res.status(200).json({ success: true, message: "Faculty updated", data: updated });
+  } catch (err) {
+    console.error("Update faculty error:", err);
+    res.status(500).json({ success: false, message: "Update failed", error: err.message });
+  }
+};
+
+

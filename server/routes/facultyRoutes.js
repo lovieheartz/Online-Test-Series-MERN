@@ -6,30 +6,37 @@ const {
   getAllFaculties,
   getFacultyProfile,
   updateFacultyProfile,
-  updateAvatar, // ✅ Import avatar upload controller
+  updateAvatar,
+  deleteFaculty,
+  getSingleFaculty,
+  updateFacultyById,
 } = require("../controllers/facultyController");
 
 const { authenticateToken } = require("../middleware/auth");
-const upload = require("../middleware/upload_multer"); // ✅ Import multer middleware
+const upload = require("../middleware/upload_multer");
 
-// Create a faculty
-router.post("/create-faculty", createFaculty);
+// ✅ Create faculty with avatar upload
+router.post("/create-faculty", upload.single("avatar"), createFaculty);
 
-// Get all faculties
+// ✅ Get all faculties
 router.get("/all-faculties", getAllFaculties);
 
-// Get current faculty profile
+// ✅ Get current faculty profile
 router.get("/profile", authenticateToken, getFacultyProfile);
 
-// Update current faculty profile fields (name, email, etc.)
+// ✅ Update current faculty profile
 router.put("/profile", authenticateToken, updateFacultyProfile);
 
-// ✅ Upload avatar
-router.post(
-  "/upload-avatar",
-  authenticateToken,
-  upload.single("avatar"),
-  updateAvatar
-);
+// ✅ Upload avatar for existing faculty
+router.post("/upload-avatar", authenticateToken, upload.single("avatar"), updateAvatar);
+
+// ✅ DELETE faculty by ID (used in FacultyList.jsx)
+router.delete("/delete/:id", deleteFaculty);
+
+// ✅ GET single faculty by ID (for edit)
+router.get("/:id", getSingleFaculty);
+
+// ✅ PUT update faculty by ID (for edit)
+router.put("/update/:id", upload.single("avatar"), updateFacultyById);
 
 module.exports = router;

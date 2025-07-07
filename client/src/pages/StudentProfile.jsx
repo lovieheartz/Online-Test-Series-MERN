@@ -16,12 +16,11 @@ const StudentProfile = () => {
   const profileEndpoint = `http://localhost:3001/student/profile`;
   const avatarEndpoint = `http://localhost:3001/student/upload-avatar`;
 
-  // Fetch profile data
-  const { 
-    data: profileData, 
-    isLoading, 
-    isError, 
-    error 
+  const {
+    data: profileData,
+    isLoading,
+    isError,
+    error,
   } = useQuery({
     queryKey: ["profile", "student"],
     queryFn: async () => {
@@ -39,7 +38,6 @@ const StudentProfile = () => {
     if (profileData) reset(profileData);
   }, [profileData, reset]);
 
-  // Mutation for updating profile
   const updateProfileMutation = useMutation({
     mutationFn: async (formData) => {
       return axios.put(profileEndpoint, formData, {
@@ -58,7 +56,6 @@ const StudentProfile = () => {
     },
   });
 
-  // Mutation for uploading avatar
   const uploadAvatarMutation = useMutation({
     mutationFn: async (file) => {
       const formData = new FormData();
@@ -92,15 +89,14 @@ const StudentProfile = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-xl">Loading profile...</div>
       </div>
     );
-  }
 
-  if (isError) {
+  if (isError)
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <h2 className="text-2xl text-red-600 mb-4">Error: {error.message}</h2>
@@ -112,7 +108,6 @@ const StudentProfile = () => {
         </button>
       </div>
     );
-  }
 
   return (
     <div className="dashboard">
@@ -121,40 +116,10 @@ const StudentProfile = () => {
         <Header user={profileData} />
         <div className="content-container px-3 py-4 w-full mx-auto max-w-full">
           <div className="bg-white rounded-xl shadow-sm px-6 py-6 w-full">
-            {/* Top Section */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full overflow-hidden border border-gray-300">
-                  <img
-                    src={
-                      profileData.avatar
-                        ? `http://localhost:3001${profileData.avatar}`
-                        : "https://via.placeholder.com/150"
-                    }
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h1 className="text-xl font-semibold text-gray-800">My Profile</h1>
-              </div>
-              {!isEditing ? (
-                <button
-                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit
-                </button>
-              ) : (
-                <button
-                  className="px-3 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-                  onClick={() => {
-                    reset(profileData);
-                    setIsEditing(false);
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
+
+            {/* Avatar Centered */}
+            <div className="flex justify-center mb-6">
+              <Avatar avatar={profileData.avatar} />
             </div>
 
             {/* Avatar Upload */}
@@ -204,17 +169,41 @@ const StudentProfile = () => {
                 />
               )}
 
-              {isEditing && (
-                <div className="flex justify-end">
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row justify-between gap-2 mt-4">
+                {!isEditing ? (
+                  <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full sm:w-auto"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsEditing(true);
+                    }}
+                  >
+                    Edit
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 w-full sm:w-auto"
+                    onClick={() => {
+                      reset(profileData);
+                      setIsEditing(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+
+                {isEditing && (
                   <button
                     type="submit"
                     disabled={updateProfileMutation.isLoading}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 w-full sm:w-auto"
                   >
                     {updateProfileMutation.isLoading ? "Saving..." : "Save Changes"}
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </form>
           </div>
         </div>
@@ -226,7 +215,20 @@ const StudentProfile = () => {
 
 export default StudentProfile;
 
-// Reusable input field
+const Avatar = ({ avatar }) => (
+  <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300">
+    <img
+      src={
+        avatar
+          ? `http://localhost:3001${avatar}`
+          : "https://via.placeholder.com/150"
+      }
+      alt="Avatar"
+      className="w-full h-full object-cover"
+    />
+  </div>
+);
+
 const InputField = ({ label, register, disabled }) => (
   <div>
     <label className="block text-sm font-medium text-gray-700">{label}</label>

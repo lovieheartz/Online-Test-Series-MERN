@@ -16,11 +16,9 @@ const FacultyList = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Form handling for search functionality
   const { register: registerSearch, watch } = useForm();
   const searchTerm = watch('search') || '';
 
-  // Fetch faculty data using useQuery
   const {
     data: facultyData = [],
     isLoading: isFetchingFaculties,
@@ -38,9 +36,9 @@ const FacultyList = () => {
     },
     retry: 2,
     retryDelay: 1000,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
-  // Fetch current admin profile (with avatar)
+
   const {
     data: profileData,
     isLoading: isProfileLoading,
@@ -54,9 +52,9 @@ const FacultyList = () => {
       });
       return data.data;
     },
-    enabled: !!user, // Only fetch if logged in
+    enabled: !!user,
   });
-  // Delete mutation using useMutation
+
   const { mutate: deleteFacultyMutation, isPending: isDeleting } = useMutation({
     mutationFn: async (facultyId) => {
       const { data } = await axios.delete(`http://localhost:3001/faculty/delete/${facultyId}`);
@@ -64,13 +62,10 @@ const FacultyList = () => {
     },
     onMutate: async (facultyId) => {
       await queryClient.cancelQueries(['faculties']);
-      
       const previousFaculties = queryClient.getQueryData(['faculties']);
-      
       queryClient.setQueryData(['faculties'], (old) =>
         old ? old.filter((f) => f._id !== facultyId) : []
       );
-      
       return { previousFaculties };
     },
     onError: (err, facultyId, context) => {
@@ -79,7 +74,7 @@ const FacultyList = () => {
         queryClient.setQueryData(['faculties'], context.previousFaculties);
       }
     },
-    onSuccess: (deletedId) => {
+    onSuccess: () => {
       toast.success('Faculty deleted successfully');
     },
     onSettled: () => {
@@ -99,8 +94,8 @@ const FacultyList = () => {
     logout();
     navigate('/login', { replace: true });
   };
+  
 
-  // Filter faculty based on search term
   const filteredFaculties = facultyData.filter((faculty) => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -145,11 +140,7 @@ const FacultyList = () => {
     <div className="dashboard">
       <Sidebar />
       <div className="main">
-        <Header
-          user={profileData || user}
-          handleLogout={handleLogout}
-          navigate={navigate}
-        />
+        <Header user={profileData || user} handleLogout={handleLogout} navigate={navigate} />
 
         <div className="content-container px-3 py-4 w-full mx-auto max-w-full">
           <div className="bg-white rounded-xl shadow-sm px-4 py-4 w-full">
@@ -177,6 +168,7 @@ const FacultyList = () => {
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-3 py-2 text-left font-medium text-gray-700">Avatar</th>
                     <th className="px-3 py-2 text-left font-medium text-gray-700">Name</th>
                     <th className="px-3 py-2 text-left font-medium text-gray-700">Email</th>
                     <th className="px-3 py-2 text-left font-medium text-gray-700">Specialization</th>
@@ -187,9 +179,24 @@ const FacultyList = () => {
                   {filteredFaculties.length > 0 ? (
                     filteredFaculties.map((faculty) => (
                       <tr key={faculty._id} className="hover:bg-gray-50">
+                        <td className="px-3 py-3">
+                          {faculty.avatar ? (
+                            <img
+                              src={`http://localhost:3001${faculty.avatar}`}
+                              alt={faculty.name}
+                              className="w-10 h-10 rounded-full object-cover border"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full text-xs text-gray-600">
+                              N/A
+                            </div>
+                          )}
+                        </td>
                         <td className="px-3 py-3 text-gray-900">{faculty.name}</td>
                         <td className="px-3 py-3 text-gray-600">{faculty.email}</td>
-                        <td className="px-3 py-3 text-gray-600">{faculty.specialization || '-'}</td>
+                        <td className="px-3 py-3 text-gray-600">
+                          {faculty.specialization || '-'}
+                        </td>
                         <td className="px-3 py-3 text-gray-600">
                           <div className="flex flex-wrap gap-2">
                             <button
@@ -212,7 +219,7 @@ const FacultyList = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="4" className="px-3 py-3 text-center text-gray-500">
+                      <td colSpan="5" className="px-3 py-3 text-center text-gray-500">
                         {searchTerm ? 'No matching faculty found' : 'No faculty members found'}
                       </td>
                     </tr>

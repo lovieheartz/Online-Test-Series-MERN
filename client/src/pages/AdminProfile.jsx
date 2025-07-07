@@ -118,30 +118,9 @@ const AdminProfile = () => {
         <Header user={profileData} />
         <div className="content-container px-3 py-4 w-full mx-auto max-w-full">
           <div className="bg-white rounded-xl shadow-sm px-6 py-6 w-full">
-            {/* Profile header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <Avatar avatar={profileData.avatar} />
-                <h1 className="text-xl font-semibold text-gray-800">My Profile</h1>
-              </div>
-              {!isEditing ? (
-                <button
-                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit
-                </button>
-              ) : (
-                <button
-                  className="px-3 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-                  onClick={() => {
-                    reset(profileData);
-                    setIsEditing(false);
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
+            {/* Avatar centered */}
+            <div className="flex justify-center mb-6">
+              <Avatar avatar={profileData.avatar} />
             </div>
 
             {/* Upload avatar */}
@@ -184,17 +163,40 @@ const AdminProfile = () => {
                 />
               )}
 
-              {isEditing && (
-                <div className="flex justify-end">
+              <div className="flex flex-col sm:flex-row justify-between gap-2 mt-4">
+                {!isEditing ? (
+                  <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full sm:w-auto"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsEditing(true);
+                    }}
+                  >
+                    Edit
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 w-full sm:w-auto"
+                    onClick={() => {
+                      reset(profileData);
+                      setIsEditing(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+
+                {isEditing && (
                   <button
                     type="submit"
                     disabled={updateProfileMutation.isLoading}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 w-full sm:w-auto"
                   >
                     {updateProfileMutation.isLoading ? "Saving..." : "Save Changes"}
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </form>
           </div>
         </div>

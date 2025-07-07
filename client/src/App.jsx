@@ -17,6 +17,7 @@ import './index.css';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Profile from "./pages/Profile"; 
+import EditFaculty from './pages/EditFaculty';
 
 // ✅ Optional: Add React Query DevTools
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -50,6 +51,7 @@ function App() {
         <Route path='/faculty-dashboard' element={<ProtectedRoute><FacultyDashboard /></ProtectedRoute>} />
         <Route path='/admin/faculty' element={<ProtectedRoute><FacultyList /></ProtectedRoute>} />
         <Route path='/faculty/add-faculty' element={<ProtectedRoute><AddFaculty /></ProtectedRoute>} />
+        <Route path="/admin/edit-faculty/:id" element={<EditFaculty />} />
       </Routes>
 
       {/* ✅ Add React Query DevTools at the bottom */}

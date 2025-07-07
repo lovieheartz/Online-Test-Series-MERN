@@ -2,13 +2,22 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// Destination logic
+// Multer storage config
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Assume you have `req.user` populated by your auth middleware
-    const role = req.user.role;
+    let role = "others";
 
-    // Map role to folder
+    // Try to determine role from authenticated user or form field
+    if (req.user?.role) {
+      role = req.user.role;
+    } else if (req.body?.role) {
+      role = req.body.role;
+    }
+
+    // Normalize role
+    role = role.toLowerCase();
+
+    // Map role to folder name
     let folderName;
     switch (role) {
       case "admin":
@@ -26,11 +35,12 @@ const storage = multer.diskStorage({
 
     const uploadPath = path.join(__dirname, "..", "uploads", folderName);
 
-    // Ensure the folder exists
+    // Ensure folder exists
     fs.mkdirSync(uploadPath, { recursive: true });
 
     cb(null, uploadPath);
   },
+
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -38,22 +48,20 @@ const storage = multer.diskStorage({
   },
 });
 
-// Filter only images
+// Filter only image files
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif/;
-  const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase()
-  );
-  const mimetype = allowedTypes.test(file.mimetype);
+  const isExtValid = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const isMimeValid = allowedTypes.test(file.mimetype);
 
-  if (extname && mimetype) {
-    return cb(null, true);
+  if (isExtValid && isMimeValid) {
+    cb(null, true);
   } else {
-    cb(new Error("Only images are allowed"));
+    cb(new Error("Only image files (jpeg, jpg, png, gif) are allowed."));
   }
 };
 
-// Export configured multer
+// Export multer middleware
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,

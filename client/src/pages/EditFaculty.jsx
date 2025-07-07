@@ -1,18 +1,18 @@
-import React, { useContext, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import React, { useEffect, useState, useContext } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
-import { AuthContext } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { useForm } from 'react-hook-form';
+import { AuthContext } from '../context/AuthContext';
 import './Dashboard.css';
 
-const AddFaculty = () => {
-  const { user, logout } = useContext(AuthContext);
+const EditFaculty = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const { user, logout } = useContext(AuthContext);
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [avatar, setAvatar] = useState(null);
 
@@ -20,59 +20,51 @@ const AddFaculty = () => {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { isSubmitting, errors },
   } = useForm();
 
   const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
 
-  const { mutate, isPending: isCreating } = useMutation({
-    mutationFn: async (facultyData) => {
-      const formData = new FormData();
-      for (const key in facultyData) {
-        formData.append(key, facultyData[key]);
-      }
-      formData.append('role', 'faculty'); 
-      
-      if (avatar) {
-        formData.append('avatar', avatar);
-      }
-
-      const token = sessionStorage.getItem('authToken');
-
-      const res = await axios.post(
-        'http://localhost:3001/faculty/create-faculty',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
+  useEffect(() => {
+    const fetchFaculty = async () => {
+      try {
+        const { data } = await axios.get(`http://localhost:3001/faculty/${id}`);
+        if (data.success && data.data) {
+          reset(data.data);
+        } else {
+          toast.error('Invalid faculty data');
         }
-      );
-      return res.data;
-    },
-    onSuccess: (data) => {
-      toast.success(data.message || 'Faculty created successfully!');
-      reset();
-      setAvatar(null);
-    },
-    onError: (err) => {
-      const errorMessage = err.response?.data?.message || 'Failed to create faculty';
-      toast.error(errorMessage);
-    },
-  });
-
-  const onSubmit = (data) => {
-    mutate(data);
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
-  };
+      } catch (err) {
+        toast.error('❌ Failed to fetch faculty');
+      }
+    };
+    fetchFaculty();
+  }, [id, reset]);
 
   const handleAvatarChange = (e) => {
     setAvatar(e.target.files[0]);
+  };
+
+  const onSubmit = async (formData) => {
+    try {
+      const form = new FormData();
+      for (const key in formData) {
+        form.append(key, formData[key]);
+      }
+      if (avatar) {
+        form.append('avatar', avatar);
+      }
+
+      await axios.put(`http://localhost:3001/faculty/update/${id}`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      toast.success('✅ Faculty updated successfully');
+      navigate('/admin/faculty');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || '❌ Failed to update faculty';
+      toast.error(msg);
+    }
   };
 
   if (!user) {
@@ -92,13 +84,16 @@ const AddFaculty = () => {
           user={user}
           toggleDropdown={toggleDropdown}
           isDropdownOpen={isDropdownOpen}
-          handleLogout={handleLogout}
+          handleLogout={() => {
+            logout();
+            navigate('/login', { replace: true });
+          }}
           navigate={navigate}
         />
 
         <div className="form-container">
           <div className="form-wrapper">
-            <h2 className="form-heading">Create Faculty</h2>
+            <h2 className="form-heading">Edit Faculty</h2>
 
             <form onSubmit={handleSubmit(onSubmit)} className="faculty-form" encType="multipart/form-data">
               <div className="form-group">
@@ -121,18 +116,8 @@ const AddFaculty = () => {
 
               <div className="form-group">
                 <input
-                  type="password"
-                  placeholder="Faculty Password"
-                  autoComplete="new-password"
-                  {...register('password', { required: 'Password is required' })}
-                />
-                {errors.password && <p className="error-text">{errors.password.message}</p>}
-              </div>
-
-              <div className="form-group">
-                <input
                   type="tel"
-                  placeholder="Faculty Phone (+1234567890)"
+                  placeholder="Faculty Phone"
                   {...register('phone', { required: 'Phone is required' })}
                 />
                 {errors.phone && <p className="error-text">{errors.phone.message}</p>}
@@ -147,10 +132,9 @@ const AddFaculty = () => {
                 {errors.specialization && <p className="error-text">{errors.specialization.message}</p>}
               </div>
 
-              {/* Avatar Upload Field */}
               <div className="form-group">
                 <label htmlFor="avatar" className="block text-sm font-medium text-gray-700">
-                  Upload Profile Image
+                  Upload New Profile Image (optional)
                 </label>
                 <input
                   type="file"
@@ -170,8 +154,8 @@ const AddFaculty = () => {
                 >
                   ← Back to Faculty List
                 </button>
-                <button type="submit" className="submit-button" disabled={isCreating}>
-                  {isCreating ? 'Creating...' : 'Create Faculty'}
+                <button type="submit" className="submit-button" disabled={isSubmitting}>
+                  {isSubmitting ? 'Updating...' : 'Update Faculty'}
                 </button>
               </div>
             </form>
@@ -208,4 +192,4 @@ const styles = {
   },
 };
 
-export default AddFaculty;
+export default EditFaculty;

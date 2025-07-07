@@ -2,36 +2,38 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const path = require("path"); // ✅ add this
+const path = require("path");
 
 const app = express();
 
-// Middleware
+// === MIDDLEWARE ===
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-// ✅ Serve static uploads folder
-app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // <== add this line
+// ✅ Serve static folder for avatar access
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+// === MONGODB CONNECTION ===
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// Routes
-app.use("/", require("./routes/auth"));
+// === ROUTES ===
+app.use("/", require("./routes/auth")); // Consider using "/auth" prefix
 app.use("/student", require("./routes/studentRoutes"));
 app.use("/admin", require("./routes/adminRoutes"));
-app.use("/faculty", require("./routes/facultyRoutes"));
+app.use("/faculty", require("./routes/facultyRoutes")); // ✅ Ensures /faculty/:id will work
 
-// Test route (optional)
+// === HEALTH CHECK ===
 app.get("/", (req, res) => {
-  res.send("Server is up and running");
+  res.send("✅ Server is up and running");
 });
 
-// Start server
+// === START SERVER ===
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
