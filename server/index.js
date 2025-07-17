@@ -28,6 +28,7 @@ app.use("/", require("./routes/auth")); // Consider using "/auth" prefix
 app.use("/student", require("./routes/studentRoutes"));
 app.use("/admin", require("./routes/adminRoutes"));
 app.use("/faculty", require("./routes/facultyRoutes")); // ✅ Ensures /faculty/:id will work
+app.use("/tests", require("./routes/testRoutes")); // Test routes
 
 // === HEALTH CHECK ===
 app.get("/", (req, res) => {

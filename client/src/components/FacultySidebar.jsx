@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Sidebar = () => {
+const FacultySidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [testDropdownOpen, setTestDropdownOpen] = useState(false);
   const navigate = useNavigate();
@@ -108,14 +108,22 @@ const Sidebar = () => {
               {testDropdownOpen && (
                 <div className="mt-2 pl-2 flex flex-col items-center space-y-2">
                   <button 
+                    onClick={() => {
+                      navigate('/faculty/add-test');
+                      setIsOpen(false);
+                    }}
                     className="w-40 px-3 py-2 text-sm text-white bg-gray-700 rounded-md hover:bg-blue-600 transition"
                   >
                     Add Tests
                   </button>
                   <button 
+                    onClick={() => {
+                      navigate('/faculty/my-test-series');
+                      setIsOpen(false);
+                    }}
                     className="w-40 px-3 py-2 text-sm text-white bg-gray-700 rounded-md hover:bg-blue-600 transition"
                   >
-                    Check Scores
+                    View Tests
                   </button>
                 </div>
               )}
@@ -135,4 +143,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default FacultySidebar;

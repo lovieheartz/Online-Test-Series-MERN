@@ -18,6 +18,10 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Profile from "./pages/Profile"; 
 import EditFaculty from './pages/EditFaculty';
+import AddTest from './pages/AddTest';
+import AddQuestion from './pages/AddQuestion';
+import FacultyTestSeries from './pages/FacultyTestSeries';
+import ManageQuestions from './pages/ManageQuestions';
 
 // ✅ Optional: Add React Query DevTools
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -26,9 +30,17 @@ function App() {
   return (
     <BrowserRouter>
       <ToastContainer
-        position="top-right"
-        autoClose={1500}
+        position="top-center"
+        autoClose={3000}
         hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+        limit={3}
       />
 
       <Routes>
@@ -52,6 +64,12 @@ function App() {
         <Route path='/admin/faculty' element={<ProtectedRoute><FacultyList /></ProtectedRoute>} />
         <Route path='/faculty/add-faculty' element={<ProtectedRoute><AddFaculty /></ProtectedRoute>} />
         <Route path="/admin/edit-faculty/:id" element={<EditFaculty />} />
+        
+        {/* Test management routes */}
+        <Route path='/faculty/add-test' element={<ProtectedRoute><AddTest /></ProtectedRoute>} />
+        <Route path='/faculty/add-questions/:testId' element={<ProtectedRoute><AddQuestion /></ProtectedRoute>} />
+        <Route path='/faculty/my-test-series' element={<ProtectedRoute><FacultyTestSeries /></ProtectedRoute>} />
+        <Route path='/faculty/manage-questions/:testId' element={<ProtectedRoute><ManageQuestions /></ProtectedRoute>} />
       </Routes>
 
       {/* ✅ Add React Query DevTools at the bottom */}

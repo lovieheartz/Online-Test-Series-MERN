@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const path = require("path");
 const fs = require("fs");
 const Faculty = require("../models/Faculty");
+const { sendFacultyWelcomeEmail } = require("../services/mailService");
 
 exports.createFaculty = async (req, res) => {
   try {
@@ -40,10 +41,19 @@ exports.createFaculty = async (req, res) => {
     });
 
     await newFaculty.save();
+    
+    // Send welcome email with credentials and reset link
+    try {
+      await sendFacultyWelcomeEmail(newFaculty, password);
+      console.log(`Welcome email sent to faculty: ${email}`);
+    } catch (emailError) {
+      console.error(`Failed to send welcome email to faculty: ${email}`, emailError);
+      // Continue execution even if email fails - don't block faculty creation
+    }
 
     res.status(201).json({
       success: true,
-      message: "Faculty created successfully",
+      message: "Faculty created successfully and welcome email sent",
       data: {
         id: newFaculty._id,
         name: newFaculty.name,

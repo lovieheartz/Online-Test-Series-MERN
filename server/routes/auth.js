@@ -55,7 +55,7 @@ router.post('/login', async (req, res) => {
 
 // Reset Password Route
 router.post('/reset-password', async (req, res) => {
-  const { token, password, type } = req.body;
+  const { token, currentPassword, password, type } = req.body;
 
   if (!token || !password || !type) {
     return res.status(400).json({ message: 'Token, password, and user type are required.' });
@@ -75,6 +75,10 @@ router.post('/reset-password', async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: 'Invalid or expired reset token.' });
     }
+    
+    // For password reset via token, we don't need to validate the current password
+    // This is because the user has already verified their identity via the reset token
+    // which was sent to their email
 
     user.password = password; // Will be hashed via Mongoose middleware
     user.resetToken = undefined;

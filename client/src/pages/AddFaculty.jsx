@@ -1,7 +1,8 @@
 import React, { useContext, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -13,6 +14,7 @@ import './Dashboard.css';
 const AddFaculty = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [avatar, setAvatar] = useState(null);
 
@@ -52,9 +54,24 @@ const AddFaculty = () => {
       return res.data;
     },
     onSuccess: (data) => {
+      // Show success toast notification
       toast.success(data.message || 'Faculty created successfully!');
+      
+      // Update the faculty list cache with the new faculty at the top
+      queryClient.setQueryData(['faculties'], (oldData) => {
+        if (!oldData) return [data.data];
+        return [data.data, ...oldData];
+      });
+      
+      // Invalidate and refetch to ensure data consistency
+      queryClient.invalidateQueries(['faculties']);
+      
+      // Reset form and avatar
       reset();
       setAvatar(null);
+      
+      // Navigate to faculty list after successful creation
+      navigate('/admin/faculty');
     },
     onError: (err) => {
       const errorMessage = err.response?.data?.message || 'Failed to create faculty';

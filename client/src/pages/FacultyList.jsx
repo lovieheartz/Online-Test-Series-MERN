@@ -96,14 +96,17 @@ const FacultyList = () => {
   };
   
 
-  const filteredFaculties = facultyData.filter((faculty) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      faculty.name.toLowerCase().includes(searchLower) ||
-      faculty.email.toLowerCase().includes(searchLower) ||
-      (faculty.specialization && faculty.specialization.toLowerCase().includes(searchLower))
-    );
-  });
+  // Sort faculties by creation date (newest first) and then filter by search term
+  const filteredFaculties = facultyData
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by newest first
+    .filter((faculty) => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        faculty.name.toLowerCase().includes(searchLower) ||
+        faculty.email.toLowerCase().includes(searchLower) ||
+        (faculty.specialization && faculty.specialization.toLowerCase().includes(searchLower))
+      );
+    });
 
   if (!user) {
     return (
